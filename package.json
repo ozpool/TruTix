@@ -1,0 +1,21 @@
+{
+  "name": "trutix",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NFT event ticketing with on-chain resale price caps and royalty enforcement",
+  "license": "MIT",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,37 @@
+# dependencies
+node_modules/
+
+# environment
+.env
+.env.*
+!.env.example
+
+# build output
+dist/
+build/
+
+# turborepo
+.turbo/
+
+# smart contract build artifacts
+artifacts/
+cache/
+typechain-types/
+coverage/
+coverage.json
+
+# logs
+*.log
+npm-debug.log*
+
+# editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# local tooling and working notes (not part of the product)
+.claude/
+CLAUDE.md
+git.md
+architecture.md
