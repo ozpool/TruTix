@@ -1,0 +1,6 @@
+{
+  "name": "@trutix/client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TruTix web app for attendees, organizers, and venue staff"
+}
