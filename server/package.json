@@ -1,0 +1,6 @@
+{
+  "name": "@trutix/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TruTix API for authentication, ticket verification, redemption, and chain indexing"
+}

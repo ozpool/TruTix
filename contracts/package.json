@@ -1,0 +1,6 @@
+{
+  "name": "@trutix/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Solidity smart contracts for TruTix tickets and the resale marketplace"
+}
