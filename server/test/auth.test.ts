@@ -56,4 +56,22 @@ describe("organizer SIWE auth", () => {
     const second = await request(app).post("/auth/verify").send({ message, signature });
     expect(second.status).toBe(401);
   });
+
+  it("rejects a message signed for a different domain", async () => {
+    const account = privateKeyToAccount(generatePrivateKey());
+    const { body } = await request(app).get("/auth/nonce");
+    const siwe = new SiweMessage({
+      domain: "evil.example",
+      address: account.address,
+      uri: "http://evil.example",
+      version: "1",
+      chainId: 84532,
+      nonce: body.nonce,
+    });
+    const message = siwe.prepareMessage();
+    const signature = await account.signMessage({ message });
+
+    const res = await request(app).post("/auth/verify").send({ message, signature });
+    expect(res.status).toBe(401);
+  });
 });
