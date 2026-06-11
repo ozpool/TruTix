@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -10,7 +11,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 ///         resale cap, and royalty at creation; minting assigns a tier and an
 ///         auto-incrementing seat, and records the price paid for later resale
 ///         cap enforcement. Funds are held per organizer and withdrawn via pull.
-contract EventTicket is ERC721 {
+contract EventTicket is ERC721, ERC2981 {
     struct EventInfo {
         string name;
         uint256 capacity;
@@ -50,6 +51,7 @@ contract EventTicket is ERC721 {
     error NotOrganizer();
     error NotRedeemer();
     error AlreadyRedeemed();
+    error InvalidRoyalty();
 
     event EventCreated(uint256 indexed eventId, address indexed organizer, string name, uint256 capacity);
     event TicketMinted(
@@ -80,6 +82,7 @@ contract EventTicket is ERC721 {
     ) external {
         if (events[eventId].exists) revert EventAlreadyExists();
         if (prices.length == 0) revert NoTiers();
+        if (royaltyBps > 10_000) revert InvalidRoyalty();
 
         events[eventId] = EventInfo({
             name: name,
@@ -116,6 +119,7 @@ contract EventTicket is ERC721 {
         ticketSeat[tokenId] = seat;
         mintPrice[tokenId] = price;
         proceeds[info.organizer] += msg.value;
+        _setTokenRoyalty(tokenId, info.organizer, info.royaltyBps);
 
         _safeMint(msg.sender, tokenId);
 
@@ -232,5 +236,10 @@ contract EventTicket is ERC721 {
                 id,
                 "</text></svg>"
             );
+    }
+
+    /// @inheritdoc ERC721
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC2981) returns (bool) {
+        return super.supportsInterface(interfaceId);
     }
 }
