@@ -52,6 +52,8 @@ contract EventTicket is ERC721, ERC2981 {
     error NotRedeemer();
     error AlreadyRedeemed();
     error InvalidRoyalty();
+    error ZeroCapacity();
+    error StartInPast();
 
     event EventCreated(uint256 indexed eventId, address indexed organizer, string name, uint256 capacity);
     event TicketMinted(
@@ -83,6 +85,8 @@ contract EventTicket is ERC721, ERC2981 {
         if (events[eventId].exists) revert EventAlreadyExists();
         if (prices.length == 0) revert NoTiers();
         if (royaltyBps > 10_000) revert InvalidRoyalty();
+        if (capacity == 0) revert ZeroCapacity();
+        if (startsAt <= block.timestamp) revert StartInPast();
 
         events[eventId] = EventInfo({
             name: name,
