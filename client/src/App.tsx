@@ -2,6 +2,8 @@ import { Routes, Route } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { RequireWallet } from "./components/RequireWallet";
 import { Landing } from "./pages/Landing";
+import { Events } from "./pages/Events";
+import { EventDetail } from "./pages/EventDetail";
 import { Placeholder } from "./pages/Placeholder";
 
 export function App() {
@@ -9,8 +11,8 @@ export function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Landing />} />
-        <Route path="events" element={<Placeholder title="Browse events" />} />
-        <Route path="events/:eventId" element={<Placeholder title="Event detail" />} />
+        <Route path="events" element={<Events />} />
+        <Route path="events/:eventId" element={<EventDetail />} />
         <Route path="resale" element={<Placeholder title="Resale marketplace" />} />
 
         <Route
