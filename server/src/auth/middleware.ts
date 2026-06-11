@@ -1,8 +1,12 @@
 import { type Request, type Response, type NextFunction } from "express";
-import { verifyOrganizerToken } from "./jwt";
+import { verifyOrganizerToken, verifyStaffToken } from "./jwt";
 
 export interface AuthedRequest extends Request {
   organizer?: string;
+}
+
+export interface StaffRequest extends Request {
+  staff?: { staffId: string; eventId: number; venue: string };
 }
 
 function bearer(req: Request): string | undefined {
@@ -19,6 +23,22 @@ export function requireOrganizer(req: AuthedRequest, res: Response, next: NextFu
   }
   try {
     req.organizer = verifyOrganizerToken(token).sub;
+    next();
+  } catch {
+    res.status(401).json({ error: "invalid token" });
+  }
+}
+
+/// Gate a route to authenticated venue staff; attaches `req.staff` with its scope.
+export function requireStaff(req: StaffRequest, res: Response, next: NextFunction): void {
+  const token = bearer(req);
+  if (!token) {
+    res.status(401).json({ error: "missing token" });
+    return;
+  }
+  try {
+    const claims = verifyStaffToken(token);
+    req.staff = { staffId: claims.sub, eventId: claims.eventId, venue: claims.venue };
     next();
   } catch {
     res.status(401).json({ error: "invalid token" });
