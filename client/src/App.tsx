@@ -1,6 +1,8 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Outlet } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { RequireWallet } from "./components/RequireWallet";
+import { RequireOrganizer } from "./components/RequireOrganizer";
+import { Dashboard } from "./pages/org/Dashboard";
 import { Landing } from "./pages/Landing";
 import { Events } from "./pages/Events";
 import { EventDetail } from "./pages/EventDetail";
@@ -43,7 +45,17 @@ export function App() {
           }
         />
 
-        <Route path="org/*" element={<Placeholder title="Organizer" />} />
+        <Route
+          path="org"
+          element={
+            <RequireOrganizer>
+              <Outlet />
+            </RequireOrganizer>
+          }
+        >
+          <Route index element={<Dashboard />} />
+        </Route>
+
         <Route path="scan" element={<Scan />} />
         <Route path="scan/log" element={<Placeholder title="Redemption log" />} />
         <Route path="*" element={<Placeholder title="Not found" />} />

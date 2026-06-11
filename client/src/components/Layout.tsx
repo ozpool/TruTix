@@ -22,6 +22,9 @@ export function Layout() {
             <NavLink to="/me" className={navClass}>
               My Tickets
             </NavLink>
+            <NavLink to="/org" className={navClass}>
+              Organizer
+            </NavLink>
           </nav>
         </div>
         <ConnectButton />
