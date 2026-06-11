@@ -18,13 +18,14 @@ export interface StaffClaims {
 
 export function signOrganizerToken(address: string): string {
   return jwt.sign({ role: "organizer" }, config.JWT_SECRET, {
+    algorithm: "HS256",
     subject: address.toLowerCase(),
     expiresIn: ORGANIZER_TTL_SECONDS,
   });
 }
 
 export function verifyOrganizerToken(token: string): OrganizerClaims {
-  const payload = jwt.verify(token, config.JWT_SECRET);
+  const payload = jwt.verify(token, config.JWT_SECRET, { algorithms: ["HS256"] });
   if (typeof payload === "string" || payload.role !== "organizer" || !payload.sub) {
     throw new Error("invalid organizer token");
   }
@@ -40,6 +41,7 @@ export function signStaffToken(params: {
     { role: "staff", eventId: params.eventId, venue: params.venue },
     config.JWT_SECRET,
     {
+      algorithm: "HS256",
       subject: params.staffId,
       expiresIn: STAFF_TTL_SECONDS,
     },
@@ -47,7 +49,7 @@ export function signStaffToken(params: {
 }
 
 export function verifyStaffToken(token: string): StaffClaims {
-  const payload = jwt.verify(token, config.JWT_SECRET);
+  const payload = jwt.verify(token, config.JWT_SECRET, { algorithms: ["HS256"] });
   if (
     typeof payload === "string" ||
     payload.role !== "staff" ||
