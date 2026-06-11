@@ -33,6 +33,9 @@ contract EventTicket is ERC721 {
 
     mapping(address organizer => uint256 amount) public proceeds;
 
+    mapping(uint256 tokenId => bool isRedeemedFlag) private _redeemed;
+    mapping(uint256 eventId => mapping(address account => bool granted)) public redeemerRole;
+
     error EventAlreadyExists();
     error EventDoesNotExist();
     error NoTiers();
@@ -42,6 +45,9 @@ contract EventTicket is ERC721 {
     error SaleClosed();
     error NothingToWithdraw();
     error WithdrawFailed();
+    error NotOrganizer();
+    error NotRedeemer();
+    error AlreadyRedeemed();
 
     event EventCreated(uint256 indexed eventId, address indexed organizer, string name, uint256 capacity);
     event TicketMinted(
@@ -53,6 +59,9 @@ contract EventTicket is ERC721 {
         uint256 price
     );
     event ProceedsWithdrawn(address indexed organizer, uint256 amount);
+    event RedeemerGranted(uint256 indexed eventId, address indexed account);
+    event RedeemerRevoked(uint256 indexed eventId, address indexed account);
+    event Redeemed(uint256 indexed tokenId, uint256 indexed eventId, address indexed redeemer);
 
     constructor() ERC721("TruTix Ticket", "TRUTIX") {}
 
@@ -121,6 +130,37 @@ contract EventTicket is ERC721 {
         if (!ok) revert WithdrawFailed();
 
         emit ProceedsWithdrawn(msg.sender, amount);
+    }
+
+    /// @notice Grant the redeemer role for one event. Organizer only.
+    function grantRedeemer(uint256 eventId, address account) external {
+        if (msg.sender != events[eventId].organizer) revert NotOrganizer();
+        redeemerRole[eventId][account] = true;
+        emit RedeemerGranted(eventId, account);
+    }
+
+    /// @notice Revoke the redeemer role for one event. Organizer only.
+    function revokeRedeemer(uint256 eventId, address account) external {
+        if (msg.sender != events[eventId].organizer) revert NotOrganizer();
+        redeemerRole[eventId][account] = false;
+        emit RedeemerRevoked(eventId, account);
+    }
+
+    /// @notice Mark a ticket redeemed at the gate. One-way; callable only by a
+    ///         redeemer of the token's event.
+    function markRedeemed(uint256 tokenId) external {
+        _requireOwned(tokenId);
+        uint256 eventId = ticketEvent[tokenId];
+        if (!redeemerRole[eventId][msg.sender]) revert NotRedeemer();
+        if (_redeemed[tokenId]) revert AlreadyRedeemed();
+
+        _redeemed[tokenId] = true;
+        emit Redeemed(tokenId, eventId, msg.sender);
+    }
+
+    /// @notice Whether a ticket has been redeemed.
+    function isRedeemed(uint256 tokenId) external view returns (bool) {
+        return _redeemed[tokenId];
     }
 
     /// @notice The price list for an event, indexed by tier.
