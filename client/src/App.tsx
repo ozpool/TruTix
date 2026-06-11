@@ -11,6 +11,8 @@ import { EventDetail } from "./pages/EventDetail";
 import { Me } from "./pages/Me";
 import { TicketPass } from "./pages/TicketPass";
 import { Scan } from "./pages/Scan";
+import { Resale } from "./pages/Resale";
+import { MyListings } from "./pages/MyListings";
 import { Placeholder } from "./pages/Placeholder";
 
 export function App() {
@@ -20,7 +22,7 @@ export function App() {
         <Route index element={<Landing />} />
         <Route path="events" element={<Events />} />
         <Route path="events/:eventId" element={<EventDetail />} />
-        <Route path="resale" element={<Placeholder title="Resale marketplace" />} />
+        <Route path="resale" element={<Resale />} />
 
         <Route
           path="me"
@@ -42,7 +44,7 @@ export function App() {
           path="me/listings"
           element={
             <RequireWallet>
-              <Placeholder title="My resale listings" />
+              <MyListings />
             </RequireWallet>
           }
         />
