@@ -6,7 +6,9 @@
   "scripts": {
     "build": "hardhat compile",
     "test": "hardhat test",
-    "typecheck": "hardhat compile && tsc --noEmit"
+    "typecheck": "hardhat compile && tsc --noEmit",
+    "deploy": "hardhat run scripts/deploy.ts --network baseSepolia",
+    "export:abis": "hardhat run scripts/export-abis.ts"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.1.0"
@@ -20,6 +22,7 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.10.0",
     "chai": "^4.2.0",
+    "dotenv": "^16.4.7",
     "ethers": "^6.4.0",
     "hardhat": "^2.22.17",
     "ts-node": "^10.9.2",
