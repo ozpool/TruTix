@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireStaff, type StaffRequest } from "../auth/middleware";
 import { verifyTicket } from "../services/verify";
+import { redeemTicket } from "../services/redeem";
 
 export const verifyRouter = Router();
 
@@ -32,5 +33,21 @@ verifyRouter.post("/", requireStaff, async (req: StaffRequest, res) => {
     now: Date.now(),
   });
 
-  res.json(result);
+  if (result.state !== "valid") {
+    res.json(result);
+    return;
+  }
+
+  try {
+    const { txHash } = await redeemTicket({
+      tokenId: parsed.data.tokenId,
+      eventId: result.eventId,
+      staffId: staff.staffId,
+    });
+    res.json({ state: "valid", eventId: result.eventId, owner: result.owner, txHash });
+  } catch {
+    // tx reverted (e.g. a parallel scan won the race) or the chain was unreachable;
+    // do not record a redemption.
+    res.json({ state: "redeem_failed" });
+  }
 });

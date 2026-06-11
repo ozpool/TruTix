@@ -1,6 +1,8 @@
 import { type Abi, type Address } from "viem";
+import { baseSepolia } from "viem/chains";
 import eventTicketAbi from "@trutix/shared/abis/EventTicket.json";
 import { publicClient } from "../chain";
+import { redeemerWallet } from "./wallet";
 import { config } from "../config";
 
 const abi = eventTicketAbi as Abi;
@@ -35,4 +37,17 @@ export async function ticketEvent(tokenId: bigint): Promise<bigint> {
     functionName: "ticketEvent",
     args: [tokenId],
   })) as bigint;
+}
+
+/// Submit the redemption transaction via the org-authorized wallet; returns its hash.
+export async function markRedeemed(tokenId: bigint): Promise<`0x${string}`> {
+  const wallet = redeemerWallet();
+  return wallet.writeContract({
+    account: wallet.account ?? null,
+    chain: baseSepolia,
+    address: address(),
+    abi,
+    functionName: "markRedeemed",
+    args: [tokenId],
+  });
 }
