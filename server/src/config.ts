@@ -18,6 +18,14 @@ const schema = z.object({
 export const config = schema.parse(process.env);
 export type Config = z.infer<typeof schema>;
 
-if (config.NODE_ENV === "production" && config.JWT_SECRET === DEV_JWT_SECRET) {
-  throw new Error("JWT_SECRET must be set to a strong value in production");
+// Deny-by-default: any environment other than development/test must supply real
+// secrets, so a misconfigured or unset NODE_ENV in a deployment fails closed.
+const isLocalEnv = config.NODE_ENV === "development" || config.NODE_ENV === "test";
+if (!isLocalEnv) {
+  if (config.JWT_SECRET === DEV_JWT_SECRET) {
+    throw new Error("JWT_SECRET must be set to a strong value outside development");
+  }
+  if (config.SIWE_DOMAIN === "localhost") {
+    throw new Error("SIWE_DOMAIN must be set to the deployment origin outside development");
+  }
 }
