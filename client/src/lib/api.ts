@@ -1,7 +1,9 @@
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
-export async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`);
+export async function apiGet<T>(path: string, token?: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
   if (!res.ok) {
     throw new Error(`GET ${path} failed (${res.status})`);
   }
