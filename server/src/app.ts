@@ -3,6 +3,7 @@ import cors from "cors";
 import { healthRouter } from "./routes/health";
 import { authRouter } from "./routes/auth";
 import { staffRouter } from "./routes/staff";
+import { verifyRouter } from "./routes/verify";
 
 /// Build the Express app without binding a port, so tests can drive it directly.
 export function createApp(): Express {
@@ -12,5 +13,6 @@ export function createApp(): Express {
   app.use("/health", healthRouter);
   app.use("/auth", authRouter);
   app.use("/org/staff", staffRouter);
+  app.use("/verify", verifyRouter);
   return app;
 }
