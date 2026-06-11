@@ -4,6 +4,8 @@ import { RequireWallet } from "./components/RequireWallet";
 import { Landing } from "./pages/Landing";
 import { Events } from "./pages/Events";
 import { EventDetail } from "./pages/EventDetail";
+import { Me } from "./pages/Me";
+import { TicketPass } from "./pages/TicketPass";
 import { Placeholder } from "./pages/Placeholder";
 
 export function App() {
@@ -19,7 +21,7 @@ export function App() {
           path="me"
           element={
             <RequireWallet>
-              <Placeholder title="My tickets" />
+              <Me />
             </RequireWallet>
           }
         />
@@ -27,7 +29,7 @@ export function App() {
           path="me/:tokenId"
           element={
             <RequireWallet>
-              <Placeholder title="Ticket QR pass" />
+              <TicketPass />
             </RequireWallet>
           }
         />

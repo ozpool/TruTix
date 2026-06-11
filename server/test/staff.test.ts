@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import request from "supertest";
 import express from "express";
 import { SiweMessage } from "siwe";
@@ -6,6 +6,11 @@ import { generatePrivateKey, privateKeyToAccount, type PrivateKeyAccount } from 
 import { setupDb, teardownDb } from "./helpers/db";
 import { createApp } from "../src/app";
 import { requireStaff, type StaffRequest } from "../src/auth/middleware";
+import { eventOrganizer } from "../src/chain/eventTicket";
+
+vi.mock("../src/chain/eventTicket", () => ({
+  eventOrganizer: vi.fn(),
+}));
 
 beforeAll(setupDb);
 afterAll(teardownDb);
@@ -38,7 +43,9 @@ function staffApp() {
 
 describe("staff accounts and tokens", () => {
   it("lets an organizer create staff and issues a scoped token", async () => {
-    const token = await organizerToken(privateKeyToAccount(generatePrivateKey()));
+    const account = privateKeyToAccount(generatePrivateKey());
+    vi.mocked(eventOrganizer).mockResolvedValue(account.address);
+    const token = await organizerToken(account);
     const res = await request(app)
       .post("/org/staff")
       .set("Authorization", `Bearer ${token}`)
@@ -53,11 +60,26 @@ describe("staff accounts and tokens", () => {
     const res = await request(app).post("/org/staff").send({ eventId: 1, venue: "Main Gate" });
     expect(res.status).toBe(401);
   });
+
+  it("rejects an organizer who does not own the event on-chain", async () => {
+    const account = privateKeyToAccount(generatePrivateKey());
+    const someoneElse = privateKeyToAccount(generatePrivateKey());
+    vi.mocked(eventOrganizer).mockResolvedValue(someoneElse.address);
+    const token = await organizerToken(account);
+    const res = await request(app)
+      .post("/org/staff")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ eventId: 99, venue: "Main Gate" });
+
+    expect(res.status).toBe(403);
+  });
 });
 
 describe("requireStaff middleware", () => {
   it("accepts a valid staff token and exposes its scope", async () => {
-    const orgToken = await organizerToken(privateKeyToAccount(generatePrivateKey()));
+    const account = privateKeyToAccount(generatePrivateKey());
+    vi.mocked(eventOrganizer).mockResolvedValue(account.address);
+    const orgToken = await organizerToken(account);
     const created = await request(app)
       .post("/org/staff")
       .set("Authorization", `Bearer ${orgToken}`)

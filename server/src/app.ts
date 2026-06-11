@@ -7,6 +7,7 @@ import { verifyRouter } from "./routes/verify";
 import { eventsRouter } from "./routes/events";
 import { orgEventsRouter } from "./routes/orgEvents";
 import { resaleRouter } from "./routes/resale";
+import { ticketsRouter } from "./routes/tickets";
 
 /// Build the Express app without binding a port, so tests can drive it directly.
 export function createApp(): Express {
@@ -20,5 +21,6 @@ export function createApp(): Express {
   app.use("/verify", verifyRouter);
   app.use("/events", eventsRouter);
   app.use("/resale", resaleRouter);
+  app.use("/tickets", ticketsRouter);
   return app;
 }
