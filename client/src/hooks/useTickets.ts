@@ -12,8 +12,7 @@ export interface Ticket {
 export function useTickets(owner: string | undefined) {
   return useQuery({
     queryKey: ["tickets", owner],
-    queryFn: () =>
-      apiGet<{ tickets: Ticket[] }>(`/tickets?owner=${owner}`).then((r) => r.tickets),
+    queryFn: () => apiGet<{ tickets: Ticket[] }>(`/tickets?owner=${owner}`).then((r) => r.tickets),
     enabled: Boolean(owner),
   });
 }
