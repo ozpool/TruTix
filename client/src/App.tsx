@@ -3,6 +3,8 @@ import { Layout } from "./components/Layout";
 import { RequireWallet } from "./components/RequireWallet";
 import { RequireOrganizer } from "./components/RequireOrganizer";
 import { Dashboard } from "./pages/org/Dashboard";
+import { CreateEvent } from "./pages/org/CreateEvent";
+import { Staff } from "./pages/org/Staff";
 import { Landing } from "./pages/Landing";
 import { Events } from "./pages/Events";
 import { EventDetail } from "./pages/EventDetail";
@@ -54,6 +56,8 @@ export function App() {
           }
         >
           <Route index element={<Dashboard />} />
+          <Route path="new" element={<CreateEvent />} />
+          <Route path="staff" element={<Staff />} />
         </Route>
 
         <Route path="scan" element={<Scan />} />
