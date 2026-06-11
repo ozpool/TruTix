@@ -6,6 +6,7 @@ import { Events } from "./pages/Events";
 import { EventDetail } from "./pages/EventDetail";
 import { Me } from "./pages/Me";
 import { TicketPass } from "./pages/TicketPass";
+import { Scan } from "./pages/Scan";
 import { Placeholder } from "./pages/Placeholder";
 
 export function App() {
@@ -43,7 +44,7 @@ export function App() {
         />
 
         <Route path="org/*" element={<Placeholder title="Organizer" />} />
-        <Route path="scan" element={<Placeholder title="Staff scanner" />} />
+        <Route path="scan" element={<Scan />} />
         <Route path="scan/log" element={<Placeholder title="Redemption log" />} />
         <Route path="*" element={<Placeholder title="Not found" />} />
       </Route>
