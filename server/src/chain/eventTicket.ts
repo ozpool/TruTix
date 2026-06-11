@@ -39,6 +39,17 @@ export async function ticketEvent(tokenId: bigint): Promise<bigint> {
   })) as bigint;
 }
 
+/// The on-chain organizer of an event (zero address if it does not exist).
+export async function eventOrganizer(eventId: bigint): Promise<Address> {
+  const event = (await publicClient.readContract({
+    address: address(),
+    abi,
+    functionName: "events",
+    args: [eventId],
+  })) as { organizer: Address };
+  return event.organizer;
+}
+
 /// Submit the redemption transaction via the org-authorized wallet; returns its hash.
 export async function markRedeemed(tokenId: bigint): Promise<`0x${string}`> {
   const wallet = redeemerWallet();

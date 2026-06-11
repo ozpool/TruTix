@@ -1,10 +1,14 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import request from "supertest";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { setupDb, teardownDb } from "./helpers/db";
 import { organizerToken } from "./helpers/auth";
 import { createApp } from "../src/app";
+import * as ticket from "../src/chain/eventTicket";
 import { Event, ResaleListing } from "../src/models";
+
+vi.mock("../src/chain/eventTicket", () => ({ eventOrganizer: vi.fn() }));
+const chain = vi.mocked(ticket);
 
 beforeAll(setupDb);
 afterAll(teardownDb);
@@ -28,6 +32,7 @@ describe("organizer event CRUD", () => {
   it("creates and lists the organizer's own events", async () => {
     const account = privateKeyToAccount(generatePrivateKey());
     const token = await organizerToken(app, account);
+    chain.eventOrganizer.mockResolvedValue(account.address); // on-chain owner matches
 
     const created = await request(app)
       .post("/org/events")
@@ -45,14 +50,15 @@ describe("organizer event CRUD", () => {
     expect(res.status).toBe(401);
   });
 
-  it("stops a different organizer from overwriting an event", async () => {
-    const owner = await organizerToken(app, privateKeyToAccount(generatePrivateKey()));
-    await request(app).post("/org/events").set("Authorization", `Bearer ${owner}`).send(payload(3));
+  it("rejects a caller who is not the on-chain organizer", async () => {
+    const owner = privateKeyToAccount(generatePrivateKey());
+    const intruder = privateKeyToAccount(generatePrivateKey());
+    chain.eventOrganizer.mockResolvedValue(owner.address); // on-chain owner is someone else
 
-    const intruder = await organizerToken(app, privateKeyToAccount(generatePrivateKey()));
+    const token = await organizerToken(app, intruder);
     const res = await request(app)
       .post("/org/events")
-      .set("Authorization", `Bearer ${intruder}`)
+      .set("Authorization", `Bearer ${token}`)
       .send(payload(3));
     expect(res.status).toBe(403);
   });
@@ -77,6 +83,17 @@ describe("public reads", () => {
     const ids = res.body.events.map((e: { eventId: number }) => e.eventId);
     expect(ids).toContain(11);
     expect(ids).not.toContain(10);
+  });
+
+  it("hides an unapproved event fetched by id", async () => {
+    await Event.create({
+      ...payload(12),
+      organizer: "0xabc",
+      startsAt: new Date(),
+      approved: false,
+    });
+    const res = await request(app).get("/events/12");
+    expect(res.status).toBe(404);
   });
 
   it("returns only active resale listings", async () => {

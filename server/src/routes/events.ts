@@ -8,9 +8,9 @@ eventsRouter.get("/", async (_req, res) => {
   res.json({ events: await Event.find({ approved: true }) });
 });
 
-/// Public single event by its on-chain id.
+/// Public single event by its on-chain id (approved events only).
 eventsRouter.get("/:eventId", async (req, res) => {
-  const event = await Event.findOne({ eventId: Number(req.params.eventId) });
+  const event = await Event.findOne({ eventId: Number(req.params.eventId), approved: true });
   if (!event) {
     res.status(404).json({ error: "not found" });
     return;

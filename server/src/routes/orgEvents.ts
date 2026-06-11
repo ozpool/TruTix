@@ -2,6 +2,9 @@ import { Router } from "express";
 import { z } from "zod";
 import { Event } from "../models";
 import { requireOrganizer, type AuthedRequest } from "../auth/middleware";
+import { eventOrganizer } from "../chain/eventTicket";
+
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 export const orgEventsRouter = Router();
 
@@ -30,9 +33,18 @@ orgEventsRouter.post("/", requireOrganizer, async (req: AuthedRequest, res) => {
     return;
   }
 
-  const existing = await Event.findOne({ eventId: parsed.data.eventId });
-  if (existing && existing.organizer !== organizer) {
-    res.status(403).json({ error: "not your event" });
+  // Bind the off-chain content to on-chain ownership: only the event's on-chain
+  // organizer may create or replace it. This prevents event-id squatting and,
+  // since the check is authoritative, avoids a check-then-write race.
+  let onChainOrganizer: string;
+  try {
+    onChainOrganizer = (await eventOrganizer(BigInt(parsed.data.eventId))).toLowerCase();
+  } catch {
+    res.status(502).json({ error: "could not verify the on-chain event" });
+    return;
+  }
+  if (onChainOrganizer === ZERO_ADDRESS || onChainOrganizer !== organizer) {
+    res.status(403).json({ error: "not the on-chain organizer of this event" });
     return;
   }
 
