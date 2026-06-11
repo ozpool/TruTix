@@ -2,6 +2,8 @@
 pragma solidity 0.8.28;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @title EventTicket
 /// @notice ERC-721 event tickets. Each event fixes its capacity, tier prices,
@@ -166,5 +168,69 @@ contract EventTicket is ERC721 {
     /// @notice The price list for an event, indexed by tier.
     function tierPrices(uint256 eventId) external view returns (uint256[] memory) {
         return _tierPrices[eventId];
+    }
+
+    /// @notice Fully on-chain metadata: base64 JSON embedding an inline SVG.
+    ///         No IPFS or external gateway.
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        _requireOwned(tokenId);
+
+        uint256 eventId = ticketEvent[tokenId];
+        string memory name = events[eventId].name;
+        string memory tier = Strings.toString(ticketTier[tokenId]);
+        string memory seat = Strings.toString(ticketSeat[tokenId]);
+        string memory id = Strings.toString(tokenId);
+
+        string memory image = Base64.encode(bytes(_svg(name, tier, seat, id)));
+        string memory json = string.concat(
+            '{"name":"',
+            name,
+            " #",
+            id,
+            '","description":"On-chain TruTix event ticket.",',
+            '"image":"data:image/svg+xml;base64,',
+            image,
+            '","attributes":[',
+            '{"trait_type":"Event","value":"',
+            name,
+            '"},',
+            '{"trait_type":"Tier","value":',
+            tier,
+            "},",
+            '{"trait_type":"Seat","value":',
+            seat,
+            "},",
+            '{"trait_type":"Redeemed","value":',
+            _redeemed[tokenId] ? "true" : "false",
+            "}]}"
+        );
+
+        return string.concat("data:application/json;base64,", Base64.encode(bytes(json)));
+    }
+
+    /// @dev Build the ticket's SVG image from its on-chain attributes.
+    function _svg(
+        string memory name,
+        string memory tier,
+        string memory seat,
+        string memory id
+    ) private pure returns (string memory) {
+        return
+            string.concat(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" viewBox="0 0 400 250">',
+                '<rect width="400" height="250" fill="#0f172a"/>',
+                '<text x="24" y="52" fill="#f8fafc" font-family="sans-serif" font-size="26" font-weight="bold">',
+                name,
+                "</text>",
+                '<text x="24" y="116" fill="#38bdf8" font-family="sans-serif" font-size="18">Tier ',
+                tier,
+                "</text>",
+                '<text x="24" y="146" fill="#38bdf8" font-family="sans-serif" font-size="18">Seat ',
+                seat,
+                "</text>",
+                '<text x="24" y="222" fill="#64748b" font-family="sans-serif" font-size="14">TruTix #',
+                id,
+                "</text></svg>"
+            );
     }
 }
