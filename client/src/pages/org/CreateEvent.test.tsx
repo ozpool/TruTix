@@ -8,7 +8,7 @@ import { useCreateEvent } from "../../hooks/useCreateEvent";
 vi.mock("../../hooks/useCreateEvent", () => ({ useCreateEvent: vi.fn() }));
 
 const submit = vi.fn();
-const base = { error: null, txError: null, eventId: null, submit };
+const base = { error: null, txError: null, warning: null, eventId: null, submit };
 
 function render() {
   renderWithProviders(

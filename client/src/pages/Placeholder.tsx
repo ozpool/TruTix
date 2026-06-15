@@ -1,9 +1,17 @@
-/// Temporary stub for routes filled in by later M3 issues (#25–#29).
+import { ButtonLink } from "../components/ui/Button";
+import { EmptyState } from "../components/ui/EmptyState";
+
+/// Fallback for unbuilt routes and unknown URLs.
 export function Placeholder({ title }: { title: string }) {
   return (
-    <section className="space-y-2">
-      <h1 className="text-2xl font-bold">{title}</h1>
-      <p className="text-slate-400">Coming soon.</p>
-    </section>
+    <EmptyState
+      title={title}
+      hint="There's nothing here yet."
+      action={
+        <ButtonLink to="/" variant="secondary">
+          Back home
+        </ButtonLink>
+      }
+    />
   );
 }

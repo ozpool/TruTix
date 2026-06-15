@@ -13,5 +13,7 @@ export function useResale() {
   return useQuery({
     queryKey: ["resale"],
     queryFn: () => apiGet<{ listings: Listing[] }>("/resale").then((r) => r.listings),
+    // Poll so listings, sales and cancels from other wallets surface live.
+    refetchInterval: 15_000,
   });
 }

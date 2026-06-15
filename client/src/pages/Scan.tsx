@@ -8,6 +8,10 @@ import {
   type StaffClaims,
 } from "../lib/staffAuth";
 import { parseGatePayload, submitScan, type ScanResult } from "../lib/scan";
+import { Card } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { cn } from "../lib/cn";
+import { ScanIcon } from "../components/ui/icons";
 
 const STATE_LABEL: Record<string, string> = {
   valid: "Admitted",
@@ -55,26 +59,26 @@ function SignIn({ onToken }: { onToken: (t: string) => void }) {
   }
 
   return (
-    <section className="max-w-md space-y-4">
+    <Card className="mx-auto max-w-md space-y-4">
+      <div className="grid h-11 w-11 place-items-center rounded-xl bg-brand-500/15 text-brand-300">
+        <ScanIcon className="h-6 w-6" />
+      </div>
       <h1 className="text-2xl font-bold">Staff sign-in</h1>
       <p className="text-sm text-slate-400">
         Paste the access token your organizer gave you. You only do this once per shift.
       </p>
       <textarea
-        className="h-28 w-full rounded-lg bg-slate-800 p-3 font-mono text-sm"
+        className="h-28 w-full rounded-xl border border-ink-600 bg-ink-850 p-3 font-mono text-sm text-slate-100 focus:border-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="eyJhbGciOi…"
+        aria-label="Staff access token"
       />
       {error && <p className="text-sm text-rose-400">{error}</p>}
-      <button
-        className="rounded-lg bg-indigo-500 px-4 py-2 font-semibold disabled:opacity-50"
-        disabled={!value.trim()}
-        onClick={submit}
-      >
+      <Button disabled={!value.trim()} onClick={submit}>
         Start scanning
-      </button>
-    </section>
+      </Button>
+    </Card>
   );
 }
 
@@ -118,7 +122,7 @@ function Scanner({
   const admitted = result?.state === "valid";
 
   return (
-    <section className="space-y-4">
+    <section className="mx-auto max-w-md space-y-4">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Gate scanner</h1>
@@ -126,24 +130,40 @@ function Scanner({
             Event {claims.eventId} · {claims.venue}
           </p>
         </div>
-        <button className="text-sm text-slate-400 underline" onClick={onSignOut}>
+        <Button variant="ghost" size="sm" onClick={onSignOut}>
           Sign out
-        </button>
+        </Button>
       </header>
 
-      <QrScanner onResult={(t) => void handleResult(t)} />
+      <Card className="space-y-3 p-3">
+        <div className="overflow-hidden rounded-xl">
+          <QrScanner onResult={(t) => void handleResult(t)} />
+        </div>
+        <p className="text-center text-xs text-slate-500">
+          Point the camera at the attendee's gate QR.
+        </p>
+      </Card>
 
       {result && (
         <div
-          className={`rounded-lg p-4 font-semibold ${admitted ? "bg-emerald-600" : "bg-amber-600"}`}
+          role="status"
+          aria-live="assertive"
+          className={cn(
+            "animate-pop-in rounded-2xl p-5 text-center text-lg font-semibold",
+            admitted ? "bg-emerald-600 text-white" : "bg-amber-500 text-ink-950",
+          )}
         >
           {STATE_LABEL[result.state] ?? result.state}
           {admitted && result.owner && (
-            <p className="mt-1 text-sm font-normal opacity-80">{result.owner}</p>
+            <p className="mt-1 font-mono text-xs font-normal opacity-90">{result.owner}</p>
           )}
         </div>
       )}
-      {error && <p className="text-sm text-rose-400">{error}</p>}
+      {error && (
+        <p className="text-sm text-rose-400" role="alert">
+          {error}
+        </p>
+      )}
     </section>
   );
 }
