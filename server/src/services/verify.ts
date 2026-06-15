@@ -1,7 +1,9 @@
 import { recoverMessageAddress, type Address } from "viem";
 import * as ticket from "../chain/eventTicket";
 
-const FRESHNESS_MS = 60_000;
+// TEMPORARY: widened from 60_000 (60s) to ease manual scan testing. Revert to
+// 60_000 before the demo / production — the short window is the anti-replay.
+const FRESHNESS_MS = 600_000;
 
 /// The message a ticket holder signs for the gate QR. The frontend must build
 /// the identical string for verification to succeed.
