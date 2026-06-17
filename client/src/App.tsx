@@ -11,11 +11,14 @@ import { EventDetail } from "./pages/EventDetail";
 import { Me } from "./pages/Me";
 import { TicketPass } from "./pages/TicketPass";
 import { Scan } from "./pages/Scan";
+import { RedemptionLog } from "./pages/RedemptionLog";
 import { Resale } from "./pages/Resale";
 import { MyListings } from "./pages/MyListings";
 import { Placeholder } from "./pages/Placeholder";
+import { useLiveSync } from "./hooks/useLiveSync";
 
 export function App() {
+  useLiveSync();
   return (
     <Routes>
       <Route element={<Layout />}>
@@ -63,7 +66,7 @@ export function App() {
         </Route>
 
         <Route path="scan" element={<Scan />} />
-        <Route path="scan/log" element={<Placeholder title="Redemption log" />} />
+        <Route path="scan/log" element={<RedemptionLog />} />
         <Route path="*" element={<Placeholder title="Not found" />} />
       </Route>
     </Routes>
