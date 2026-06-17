@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useTickets } from "../hooks/useTickets";
+import { useEventMap } from "../hooks/useEvents";
 import { ButtonLink } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Spinner } from "../components/ui/Spinner";
@@ -9,6 +10,7 @@ import { TicketIcon } from "../components/ui/icons";
 export function Me() {
   const { address } = useAccount();
   const { data: tickets, isLoading, isError } = useTickets(address);
+  const events = useEventMap();
 
   if (isLoading)
     return (
@@ -43,15 +45,18 @@ export function Me() {
             <li key={t.tokenId}>
               <Link to={`/me/${t.tokenId}`} className="block focus-visible:outline-none">
                 <div className="group overflow-hidden rounded-2xl border border-ink-700 bg-gradient-to-br from-ink-850 to-ink-900 transition hover:-translate-y-0.5 hover:border-brand-500/50 hover:shadow-glow">
-                  <div className="flex items-center justify-between border-b border-dashed border-ink-600 p-5">
-                    <p className="font-display text-lg">Ticket #{t.tokenId}</p>
-                    <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-500/15 text-brand-300">
+                  <div className="flex items-center justify-between gap-3 border-b border-dashed border-ink-600 p-5">
+                    <div className="min-w-0">
+                      <p className="truncate font-display text-lg">{events.name(t.eventId)}</p>
+                      <p className="text-xs text-slate-500">Ticket #{t.tokenId}</p>
+                    </div>
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-500/15 text-brand-300">
                       <TicketIcon className="h-5 w-5" />
                     </span>
                   </div>
                   <div className="flex items-center justify-between p-5 text-sm text-slate-400">
                     <span>
-                      Event {t.eventId} · Tier {t.tier} · Seat {t.seat}
+                      Tier {t.tier} · Seat {t.seat}
                     </span>
                     <span className="font-medium text-brand-300 group-hover:text-brand-200">
                       Show pass →

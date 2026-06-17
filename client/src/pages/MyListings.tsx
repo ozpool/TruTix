@@ -3,6 +3,7 @@ import { useAccount, useWriteContract } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatEther } from "viem";
 import { useResale } from "../hooks/useResale";
+import { useEventMap } from "../hooks/useEvents";
 import { useTickets } from "../hooks/useTickets";
 import { useListTicket } from "../hooks/useListTicket";
 import { chainId, marketplace } from "../contracts";
@@ -18,6 +19,7 @@ export function MyListings() {
   const { address } = useAccount();
   const queryClient = useQueryClient();
   const { data: listings } = useResale();
+  const events = useEventMap();
   const { data: tickets } = useTickets(address);
   const { writeContract } = useWriteContract();
 
@@ -65,7 +67,7 @@ export function MyListings() {
                 <option value="">Select a ticket…</option>
                 {tickets?.map((t) => (
                   <option key={t.tokenId} value={t.tokenId}>
-                    Ticket #{t.tokenId} (event {t.eventId})
+                    {events.name(t.eventId)} — Ticket #{t.tokenId}
                   </option>
                 ))}
               </select>
@@ -103,12 +105,15 @@ export function MyListings() {
         ) : (
           mine?.map((l) => (
             <Card key={l.tokenId} className="flex items-center justify-between gap-4 py-4">
-              <span className="text-sm">
-                Ticket #{l.tokenId} ·{" "}
-                <span className="font-mono text-citrus-300">
-                  {formatEther(BigInt(l.price))} ETH
-                </span>
-              </span>
+              <div className="min-w-0 space-y-0.5">
+                <p className="truncate text-sm font-medium">{events.name(l.eventId)}</p>
+                <p className="text-xs text-slate-400">
+                  Ticket #{l.tokenId} ·{" "}
+                  <span className="font-mono text-citrus-300">
+                    {formatEther(BigInt(l.price))} ETH
+                  </span>
+                </p>
+              </div>
               <Button variant="ghost" size="sm" onClick={() => cancel(l.tokenId)}>
                 Cancel
               </Button>
