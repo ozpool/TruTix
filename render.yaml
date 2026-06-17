@@ -1,0 +1,43 @@
+# Render blueprint for the TruTix API. Import via Render → New → Blueprint, then
+# fill the secret env vars marked `sync: false` in the dashboard.
+#
+# Note: the chain indexer watches from the latest block forward and does not
+# backfill. On the free plan the service sleeps when idle, so events that occur
+# during sleep are not cached until the next on-chain event after wake. Use a
+# paid instance for an always-on indexer.
+services:
+  - type: web
+    name: trutix-api
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: pnpm --filter @trutix/server start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      # Mongo Atlas connection string.
+      - key: MONGO_URI
+        sync: false
+      # Strong random secret, at least 32 characters (e.g. `openssl rand -hex 32`).
+      - key: JWT_SECRET
+        sync: false
+      # Must equal the deployed frontend origin host, e.g. `trutix.vercel.app`.
+      - key: SIWE_DOMAIN
+        sync: false
+      # Base Sepolia JSON-RPC endpoint (a dedicated provider is recommended).
+      - key: RPC_URL
+        sync: false
+      # Private key of the redeemer wallet authorized to mark tickets redeemed.
+      - key: BACKEND_PRIVATE_KEY
+        sync: false
+      - key: EVENT_TICKET_ADDR
+        sync: false
+      - key: MARKETPLACE_ADDR
+        sync: false
+      # Optional; defaults to 60000 (60s). Leave unset in production.
+      - key: GATE_FRESHNESS_MS
+        sync: false
