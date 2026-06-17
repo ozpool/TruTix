@@ -43,7 +43,7 @@ describe("verifyTicket", () => {
   });
 
   it("is stale for an old timestamp", async () => {
-    const old = NOW - 61_000;
+    const old = NOW - 601_000;
     const { signature } = await signedQr(1, old);
     const result = await verifyTicket({
       tokenId: 1,

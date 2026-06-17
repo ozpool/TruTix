@@ -9,6 +9,9 @@ const schema = z.object({
   MONGO_URI: z.string().default("mongodb://127.0.0.1:27017/trutix"),
   JWT_SECRET: z.string().min(32).default(DEV_JWT_SECRET),
   SIWE_DOMAIN: z.string().default("localhost"),
+  // The gate QR anti-replay window. Defaults to 60s (the product invariant);
+  // override only for local manual testing, never widen it in production.
+  GATE_FRESHNESS_MS: z.coerce.number().int().positive().default(60_000),
   RPC_URL: z.string().default("https://sepolia.base.org"),
   BACKEND_PRIVATE_KEY: z.string().optional(),
   EVENT_TICKET_ADDR: z.string().optional(),

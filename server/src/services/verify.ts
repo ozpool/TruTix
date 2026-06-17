@@ -1,7 +1,10 @@
 import { recoverMessageAddress, type Address } from "viem";
 import * as ticket from "../chain/eventTicket";
+import { config } from "../config";
 
-const FRESHNESS_MS = 60_000;
+/// How long a signed gate QR stays valid. 60s by default (the anti-replay
+/// window); configurable via GATE_FRESHNESS_MS for local testing only.
+const FRESHNESS_MS = config.GATE_FRESHNESS_MS;
 
 /// The message a ticket holder signs for the gate QR. The frontend must build
 /// the identical string for verification to succeed.

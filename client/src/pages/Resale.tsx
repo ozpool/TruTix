@@ -1,59 +1,107 @@
 import { useAccount, useWriteContract } from "wagmi";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatEther } from "viem";
 import { useResale } from "../hooks/useResale";
-import { marketplace } from "../contracts";
+import { useEventMap } from "../hooks/useEvents";
+import { chainId, marketplace } from "../contracts";
+import { Card } from "../components/ui/Card";
+import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
+import { TxStatus } from "../components/ui/TxStatus";
+import { EmptyState } from "../components/ui/EmptyState";
+import { Spinner } from "../components/ui/Spinner";
+import { HelpHint } from "../components/ui/HelpHint";
+import { StoreIcon, TicketIcon } from "../components/ui/icons";
 
 /// Public marketplace: every active resale listing with a buy button. The price
 /// is the on-chain, cap-enforced amount; buying sends exactly that value.
 export function Resale() {
   const { isConnected } = useAccount();
   const { data: listings, isLoading } = useResale();
+  const events = useEventMap();
+  const queryClient = useQueryClient();
   const { writeContract, isPending, data: hash } = useWriteContract();
 
   function buy(tokenId: number, price: string) {
-    writeContract({
-      address: marketplace.address,
-      abi: marketplace.abi,
-      functionName: "buy",
-      args: [BigInt(tokenId)],
-      value: BigInt(price),
-    });
+    writeContract(
+      {
+        chainId,
+        address: marketplace.address,
+        abi: marketplace.abi,
+        functionName: "buy",
+        args: [BigInt(tokenId)],
+        value: BigInt(price),
+      },
+      {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({ queryKey: ["resale"] });
+          void queryClient.invalidateQueries({ queryKey: ["tickets"] });
+        },
+      },
+    );
   }
 
-  if (isLoading) return <p className="text-slate-400">Loading…</p>;
+  if (isLoading)
+    return (
+      <p className="flex items-center gap-2 text-slate-400">
+        <Spinner /> Loading…
+      </p>
+    );
 
   return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-bold">Resale marketplace</h1>
-      {listings?.length === 0 && <p className="text-slate-400">No active listings.</p>}
-      <div className="space-y-3">
-        {listings?.map((l) => (
-          <div
-            key={l.tokenId}
-            className="flex items-center justify-between rounded-lg border border-slate-800 px-4 py-3"
-          >
-            <div>
-              <p className="font-semibold">Ticket #{l.tokenId}</p>
-              <p className="text-sm text-slate-400">
-                Event #{l.eventId} · {formatEther(BigInt(l.price))} ETH
-              </p>
-            </div>
-            {isConnected ? (
-              <button
-                className="rounded bg-sky-500 px-4 py-2 text-sm font-medium disabled:opacity-50"
-                disabled={isPending}
-                onClick={() => buy(l.tokenId, l.price)}
-              >
-                Buy
-              </button>
-            ) : (
-              <span className="text-sm text-slate-500">Connect to buy</span>
-            )}
-          </div>
-        ))}
-      </div>
+    <section className="space-y-6">
+      <header className="space-y-1">
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold">Resale marketplace</h1>
+          <HelpHint label="How resale pricing works">
+            Sellers can only list at or below the cap the organizer set on-chain. The contract
+            rejects anything higher, so no scalper markups get through. The price you see is the
+            exact amount your wallet sends.
+          </HelpHint>
+        </div>
+        <p className="text-sm text-slate-400">
+          Every price here is capped on-chain — no scalper markups get through.
+        </p>
+      </header>
+
+      {listings?.length === 0 ? (
+        <EmptyState
+          icon={<StoreIcon className="h-8 w-8" />}
+          title="No active listings."
+          hint="When someone lists a ticket for resale, it shows up here."
+        />
+      ) : (
+        <div className="grid gap-3">
+          {listings?.map((l) => (
+            <Card key={l.tokenId} className="flex items-center justify-between gap-4 py-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-500/15 text-brand-300">
+                  <TicketIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 space-y-1">
+                  <p className="truncate font-display text-base">{events.name(l.eventId)}</p>
+                  <div className="flex items-center gap-2">
+                    <Badge tone="neutral">Ticket #{l.tokenId}</Badge>
+                    <span className="font-mono text-sm text-citrus-300">
+                      {formatEther(BigInt(l.price))} ETH
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {isConnected ? (
+                <Button size="sm" loading={isPending} onClick={() => buy(l.tokenId, l.price)}>
+                  Buy
+                </Button>
+              ) : (
+                <span className="shrink-0 text-sm text-slate-500">Connect to buy</span>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
+
       {hash && (
-        <p className="text-sm text-emerald-400">Purchase submitted. Tx {hash.slice(0, 10)}…</p>
+        <TxStatus tone="success">Purchase submitted. Transaction {hash.slice(0, 10)}…</TxStatus>
       )}
     </section>
   );

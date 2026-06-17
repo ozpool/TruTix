@@ -1,16 +1,19 @@
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrg } from "../../org/context";
 import { useCreateEvent } from "../../hooks/useCreateEvent";
-
-const inputClass = "w-full rounded bg-slate-800 px-3 py-2 text-sm";
+import { Card } from "../../components/ui/Card";
+import { Button, ButtonLink } from "../../components/ui/Button";
+import { Field, Input } from "../../components/ui/Field";
+import { TxStatus } from "../../components/ui/TxStatus";
+import { CheckIcon } from "../../components/ui/icons";
 
 /// Create-event form. The id is generated for the organizer; they only describe
 /// the event. Submitting writes on-chain, then saves the off-chain content.
 export function CreateEvent() {
   const { token } = useOrg();
   const navigate = useNavigate();
-  const { phase, error, txError, eventId, submit } = useCreateEvent(token);
+  const { phase, error, txError, warning, eventId, submit } = useCreateEvent(token);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -22,107 +25,122 @@ export function CreateEvent() {
 
   if (phase === "done") {
     return (
-      <section className="space-y-4">
+      <section className="mx-auto max-w-md space-y-4 text-center">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-500/15 text-emerald-300">
+          <CheckIcon className="h-7 w-7" />
+        </div>
         <h1 className="text-2xl font-bold">Event created</h1>
         <p className="text-emerald-400">Event #{eventId?.toString()} is live.</p>
-        <button className="text-sm underline" onClick={() => navigate("/org")}>
+        {warning && <TxStatus tone="warn">{warning}</TxStatus>}
+        <ButtonLink to="/org" variant="secondary">
           Back to dashboard
-        </button>
+        </ButtonLink>
       </section>
     );
   }
 
-  const busy = phase === "confirming" || phase === "saving";
+  const busy = phase === "confirming" || phase === "granting";
 
   return (
-    <section className="max-w-lg space-y-4">
-      <h1 className="text-2xl font-bold">Create event</h1>
-
-      <Field label="Name">
-        <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
-      </Field>
-      <Field label="Description">
-        <textarea
-          className={inputClass}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </Field>
-      <div className="grid grid-cols-3 gap-3">
-        <Field label="Capacity">
-          <input
-            className={inputClass}
-            value={capacity}
-            onChange={(e) => setCapacity(e.target.value)}
-          />
-        </Field>
-        <Field label="Resale cap %">
-          <input
-            className={inputClass}
-            value={maxResalePct}
-            onChange={(e) => setMaxResalePct(e.target.value)}
-          />
-        </Field>
-        <Field label="Royalty %">
-          <input
-            className={inputClass}
-            value={royaltyPct}
-            onChange={(e) => setRoyaltyPct(e.target.value)}
-          />
-        </Field>
+    <section className="mx-auto max-w-lg space-y-6">
+      <div className="space-y-1">
+        <button
+          className="text-sm text-slate-400 hover:text-slate-200"
+          onClick={() => navigate("/org")}
+        >
+          ← Organizer
+        </button>
+        <h1 className="text-3xl font-bold">Create event</h1>
       </div>
-      <Field label="Starts at">
-        <input
-          type="datetime-local"
-          className={inputClass}
-          value={startsAt}
-          onChange={(e) => setStartsAt(e.target.value)}
-        />
-      </Field>
-      <Field label="Tier prices (ETH)">
-        <div className="space-y-2">
-          {prices.map((p, i) => (
-            <input
-              key={i}
-              className={inputClass}
-              value={p}
-              onChange={(e) => setPrices((ps) => ps.map((v, j) => (j === i ? e.target.value : v)))}
+
+      <Card className="space-y-5">
+        <Field label="Name">
+          {(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} />}
+        </Field>
+        <Field label="Description">
+          {(p) => (
+            <textarea
+              {...p}
+              className="w-full rounded-xl border border-ink-600 bg-ink-850 px-3.5 py-2.5 text-sm text-slate-100 focus:border-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950"
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
-          ))}
-          <button
-            type="button"
-            className="text-sm text-slate-400 underline"
-            onClick={() => setPrices((ps) => [...ps, "0.01"])}
-          >
-            Add tier
-          </button>
+          )}
+        </Field>
+
+        <div className="grid grid-cols-3 gap-3">
+          <Field label="Capacity">
+            {(p) => <Input {...p} value={capacity} onChange={(e) => setCapacity(e.target.value)} />}
+          </Field>
+          <Field label="Resale cap %">
+            {(p) => (
+              <Input
+                {...p}
+                value={maxResalePct}
+                onChange={(e) => setMaxResalePct(e.target.value)}
+              />
+            )}
+          </Field>
+          <Field label="Royalty %">
+            {(p) => (
+              <Input {...p} value={royaltyPct} onChange={(e) => setRoyaltyPct(e.target.value)} />
+            )}
+          </Field>
         </div>
-      </Field>
 
-      {error && <p className="text-sm text-rose-400">{error}</p>}
-      {txError && <p className="text-sm text-rose-400">Transaction rejected.</p>}
-      <button
-        className="rounded-lg bg-indigo-500 px-4 py-2 font-semibold disabled:opacity-50"
-        disabled={busy}
-        onClick={() =>
-          submit({ name, description, capacity, maxResalePct, royaltyPct, startsAt, prices })
-        }
-      >
-        {phase === "confirming"
-          ? "Confirm in wallet…"
-          : phase === "saving"
-            ? "Saving…"
-            : "Create event"}
-      </button>
+        <Field label="Starts at" hint="Must be a future date and time.">
+          {(p) => (
+            <Input
+              {...p}
+              type="datetime-local"
+              value={startsAt}
+              onChange={(e) => setStartsAt(e.target.value)}
+            />
+          )}
+        </Field>
+
+        <Field label="Tier prices (ETH)">
+          {() => (
+            <div className="space-y-2">
+              {prices.map((tp, i) => (
+                <Input
+                  key={i}
+                  aria-label={`Tier ${i} price in ETH`}
+                  value={tp}
+                  onChange={(e) =>
+                    setPrices((ps) => ps.map((v, j) => (j === i ? e.target.value : v)))
+                  }
+                />
+              ))}
+              <button
+                type="button"
+                className="text-sm font-medium text-brand-300 hover:text-brand-200"
+                onClick={() => setPrices((ps) => [...ps, "0.01"])}
+              >
+                + Add tier
+              </button>
+            </div>
+          )}
+        </Field>
+
+        {error && <TxStatus tone="danger">{error}</TxStatus>}
+        {txError && <TxStatus tone="danger">Transaction rejected in your wallet.</TxStatus>}
+
+        <Button
+          className="w-full"
+          loading={busy}
+          onClick={() =>
+            submit({ name, description, capacity, maxResalePct, royaltyPct, startsAt, prices })
+          }
+        >
+          {phase === "confirming"
+            ? "Confirm in wallet…"
+            : phase === "granting"
+              ? "Authorizing scanner…"
+              : "Create event"}
+        </Button>
+      </Card>
     </section>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="block space-y-1">
-      <span className="block text-sm text-slate-400">{label}</span>
-      {children}
-    </label>
   );
 }

@@ -11,10 +11,17 @@ vi.mock("../hooks/useTickets", () => ({
   }),
 }));
 
+vi.mock("../hooks/useEvents", () => ({
+  useEventMap: () => ({
+    get: () => undefined,
+    name: (id: number) => (id === 7 ? "Summer Fest" : `Event #${id}`),
+  }),
+}));
+
 describe("My Tickets page", () => {
-  it("renders the wallet's tickets", () => {
+  it("renders the wallet's tickets with the event name", () => {
     renderWithProviders(<Me />);
     expect(screen.getByText("Ticket #1")).toBeInTheDocument();
-    expect(screen.getByText(/Event 7/)).toBeInTheDocument();
+    expect(screen.getByText("Summer Fest")).toBeInTheDocument();
   });
 });

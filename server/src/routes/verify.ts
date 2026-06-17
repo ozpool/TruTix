@@ -43,6 +43,7 @@ verifyRouter.post("/", requireStaff, async (req: StaffRequest, res) => {
       tokenId: parsed.data.tokenId,
       eventId: result.eventId,
       staffId: staff.staffId,
+      owner: result.owner,
     });
     res.json({ state: "valid", eventId: result.eventId, owner: result.owner, txHash });
   } catch {

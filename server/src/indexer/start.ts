@@ -3,7 +3,13 @@ import eventTicketAbi from "@trutix/shared/abis/EventTicket.json";
 import marketplaceAbi from "@trutix/shared/abis/TicketMarketplace.json";
 import { publicClient } from "../chain";
 import { config } from "../config";
-import { handleMinted, handleTransfer, handleListed, handleListingClosed } from "./handlers";
+import {
+  handleEventCreated,
+  handleMinted,
+  handleTransfer,
+  handleListed,
+  handleListingClosed,
+} from "./handlers";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
@@ -24,6 +30,17 @@ export function startIndexer(): void {
 
   const ticketAbi = eventTicketAbi as Abi;
   const mktAbi = marketplaceAbi as Abi;
+
+  publicClient.watchContractEvent({
+    address: eventTicket,
+    abi: ticketAbi,
+    eventName: "EventCreated",
+    onLogs: (logs) => {
+      for (const log of logs) {
+        void handleEventCreated({ eventId: num(argsOf(log).eventId) });
+      }
+    },
+  });
 
   publicClient.watchContractEvent({
     address: eventTicket,

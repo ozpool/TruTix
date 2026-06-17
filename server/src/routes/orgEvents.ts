@@ -48,9 +48,11 @@ orgEventsRouter.post("/", requireOrganizer, async (req: AuthedRequest, res) => {
     return;
   }
 
+  // Organizer-created events are immediately visible; a separate review
+  // step is future scope, so nothing else can flip this flag today.
   const event = await Event.findOneAndUpdate(
     { eventId: parsed.data.eventId },
-    { ...parsed.data, organizer },
+    { ...parsed.data, organizer, approved: true },
     { upsert: true, new: true, setDefaultsOnInsert: true },
   );
   res.status(201).json(event);

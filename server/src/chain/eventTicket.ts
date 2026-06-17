@@ -40,14 +40,53 @@ export async function ticketEvent(tokenId: bigint): Promise<bigint> {
 }
 
 /// The on-chain organizer of an event (zero address if it does not exist).
+/// The public `events` getter returns the struct as a flat tuple:
+/// [name, capacity, maxResalePct, royaltyBps, organizer, startsAt, exists].
 export async function eventOrganizer(eventId: bigint): Promise<Address> {
   const event = (await publicClient.readContract({
     address: address(),
     abi,
     functionName: "events",
     args: [eventId],
-  })) as { organizer: Address };
-  return event.organizer;
+  })) as readonly unknown[];
+  return event[4] as Address;
+}
+
+export interface OnChainEvent {
+  name: string;
+  capacity: number;
+  maxResalePct: number;
+  royaltyBps: number;
+  organizer: Address;
+  startsAt: number;
+}
+
+/// The full on-chain terms of an event, parsed from the flat getter tuple.
+export async function eventInfo(eventId: bigint): Promise<OnChainEvent> {
+  const e = (await publicClient.readContract({
+    address: address(),
+    abi,
+    functionName: "events",
+    args: [eventId],
+  })) as readonly [string, bigint, bigint, bigint, Address, bigint, boolean];
+  return {
+    name: e[0],
+    capacity: Number(e[1]),
+    maxResalePct: Number(e[2]),
+    royaltyBps: Number(e[3]),
+    organizer: e[4],
+    startsAt: Number(e[5]),
+  };
+}
+
+export async function tierPrices(eventId: bigint): Promise<string[]> {
+  const prices = (await publicClient.readContract({
+    address: address(),
+    abi,
+    functionName: "tierPrices",
+    args: [eventId],
+  })) as readonly bigint[];
+  return prices.map((p) => p.toString());
 }
 
 /// Submit the redemption transaction via the org-authorized wallet; returns its hash.

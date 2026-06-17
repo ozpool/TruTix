@@ -7,7 +7,19 @@ import { wagmiConfig } from "./wagmi";
 import { App } from "./App";
 import "./index.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Refetch when the tab regains focus or the network reconnects, so data
+      // is never stale after the user looks away. Block-driven invalidation
+      // (useLiveSync) handles in-session freshness.
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      staleTime: 5_000,
+      retry: 1,
+    },
+  },
+});
 const root = document.getElementById("root");
 if (!root) {
   throw new Error("missing #root element");

@@ -4,8 +4,10 @@ import { healthRouter } from "./routes/health";
 import { authRouter } from "./routes/auth";
 import { staffRouter } from "./routes/staff";
 import { verifyRouter } from "./routes/verify";
+import { redemptionsRouter } from "./routes/redemptions";
 import { eventsRouter } from "./routes/events";
 import { orgEventsRouter } from "./routes/orgEvents";
+import { redeemerRouter } from "./routes/redeemer";
 import { resaleRouter } from "./routes/resale";
 import { ticketsRouter } from "./routes/tickets";
 
@@ -18,7 +20,9 @@ export function createApp(): Express {
   app.use("/auth", authRouter);
   app.use("/org/staff", staffRouter);
   app.use("/org/events", orgEventsRouter);
+  app.use("/org/redeemer", redeemerRouter);
   app.use("/verify", verifyRouter);
+  app.use("/redemptions", redemptionsRouter);
   app.use("/events", eventsRouter);
   app.use("/resale", resaleRouter);
   app.use("/tickets", ticketsRouter);

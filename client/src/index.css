@@ -1,3 +1,66 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-ink-950 font-sans text-slate-100 antialiased;
+    /* Faint dual-glow backdrop so large empty areas don't read as flat black. */
+    background-image:
+      radial-gradient(60rem 60rem at 110% -10%, rgba(124, 92, 255, 0.12), transparent 55%),
+      radial-gradient(50rem 50rem at -10% 10%, rgba(174, 240, 0, 0.06), transparent 50%);
+    background-attachment: fixed;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+  }
+
+  /* Keyboard users get a clear ring; mouse users don't see it. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-400 ring-offset-2 ring-offset-ink-950;
+  }
+
+  ::selection {
+    background: rgba(124, 92, 255, 0.35);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-ink-700;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-ink-600;
+  }
+}
+
+@layer components {
+  /* Perforated ticket-stub edge used on ticket/pass surfaces. */
+  .ticket-notch {
+    -webkit-mask-image:
+      radial-gradient(circle at left, transparent 9px, black 10px),
+      radial-gradient(circle at right, transparent 9px, black 10px);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+  }
+}
+
+/* Respect users who asked the OS to reduce motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

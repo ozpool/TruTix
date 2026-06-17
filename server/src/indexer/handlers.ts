@@ -1,4 +1,28 @@
-import { TicketOwner, ResaleListing } from "../models";
+import { TicketOwner, ResaleListing, Event } from "../models";
+import { eventInfo, tierPrices } from "../chain/eventTicket";
+
+/// An event was created on-chain: cache its terms so it is visible even when
+/// the organizer's off-chain metadata save fails (expired session, API down).
+/// Only chain-derived fields are written; description/heroImage stay intact.
+export async function handleEventCreated(args: { eventId: number }): Promise<void> {
+  const id = BigInt(args.eventId);
+  const [info, prices] = await Promise.all([eventInfo(id), tierPrices(id)]);
+  await Event.findOneAndUpdate(
+    { eventId: args.eventId },
+    {
+      eventId: args.eventId,
+      name: info.name,
+      capacity: info.capacity,
+      maxResalePct: info.maxResalePct,
+      royaltyBps: info.royaltyBps,
+      startsAt: new Date(info.startsAt * 1000),
+      tierPrices: prices,
+      organizer: info.organizer.toLowerCase(),
+      approved: true,
+    },
+    { upsert: true, setDefaultsOnInsert: true },
+  );
+}
 
 /// A new ticket was minted: record its owner, event, tier and seat.
 export async function handleMinted(args: {
