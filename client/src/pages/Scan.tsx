@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { QrScanner } from "../components/QrScanner";
 import {
   clearStaffToken,
@@ -8,8 +9,11 @@ import {
   type StaffClaims,
 } from "../lib/staffAuth";
 import { parseGatePayload, submitScan, type ScanResult } from "../lib/scan";
+import { useRedemptions } from "../hooks/useRedemptions";
+import { ScanLog } from "../components/ScanLog";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import { HelpHint } from "../components/ui/HelpHint";
 import { cn } from "../lib/cn";
 import { ScanIcon } from "../components/ui/icons";
 
@@ -94,6 +98,8 @@ function Scanner({
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const busy = useRef(false);
+  const queryClient = useQueryClient();
+  const { data: history } = useRedemptions(token);
 
   async function handleResult(text: string) {
     if (busy.current) return;
@@ -106,7 +112,11 @@ function Scanner({
       return;
     }
     try {
-      setResult(await submitScan(payload, token));
+      const scan = await submitScan(payload, token);
+      setResult(scan);
+      if (scan.state === "valid") {
+        void queryClient.invalidateQueries({ queryKey: ["scan-history"] });
+      }
     } catch (e) {
       if (String(e).includes("401")) {
         setError("Your token expired. Sign in again.");
@@ -125,7 +135,14 @@ function Scanner({
     <section className="mx-auto max-w-md space-y-4">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Gate scanner</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">Gate scanner</h1>
+            <HelpHint label="How scanning works">
+              Point the camera at an attendee's gate QR. A valid pass is admitted and marked
+              redeemed on-chain — one way, so it can't be reused. Everyone you admit is listed
+              below.
+            </HelpHint>
+          </div>
           <p className="text-sm text-slate-400">
             Event {claims.eventId} · {claims.venue}
           </p>
@@ -164,6 +181,8 @@ function Scanner({
           {error}
         </p>
       )}
+
+      <ScanLog redemptions={history} />
     </section>
   );
 }
