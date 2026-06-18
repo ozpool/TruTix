@@ -41,8 +41,10 @@ export function useOrganizerAuth() {
       });
       setOrgToken(jwt);
       setToken(jwt);
-    } catch {
-      setError("Sign-in failed.");
+    } catch (e) {
+      // Surface the real cause (domain mismatch, cold backend, bad API URL)
+      // instead of a generic message so failures are diagnosable.
+      setError(e instanceof Error ? e.message : "Sign-in failed.");
     } finally {
       setPending(false);
     }
