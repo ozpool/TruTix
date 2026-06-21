@@ -1,8 +1,8 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAccount, useChainId, useSignMessage } from "wagmi";
 import { SiweMessage } from "siwe";
 import { apiGet, apiPost } from "../lib/api";
-import { clearOrgToken, getOrgToken, setOrgToken } from "../lib/orgAuth";
+import { clearOrgToken, decodeOrgAddress, getOrgToken, setOrgToken } from "../lib/orgAuth";
 
 const SIWE_DOMAIN = import.meta.env.VITE_SIWE_DOMAIN ?? "localhost";
 
@@ -10,12 +10,33 @@ const SIWE_DOMAIN = import.meta.env.VITE_SIWE_DOMAIN ?? "localhost";
 /// it for a JWT, and persist it. The message's domain must match the backend's
 /// SIWE_DOMAIN or verification fails.
 export function useOrganizerAuth() {
-  const { address } = useAccount();
+  const { address, status } = useAccount();
   const chainId = useChainId();
   const { signMessageAsync } = useSignMessage();
   const [token, setToken] = useState<string | null>(getOrgToken());
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Keep the organizer session tied to the connected wallet: disconnecting the
+  // wallet (or switching to a different account) ends the organizer session too,
+  // reactively — no page refresh. `reconnecting`/`connecting` are left alone so a
+  // page reload doesn't drop a still-valid session mid-handshake.
+  useEffect(() => {
+    if (status === "disconnected") {
+      if (getOrgToken()) {
+        clearOrgToken();
+        setToken(null);
+      }
+      return;
+    }
+    if (status === "connected" && token && address) {
+      const tokenAddress = decodeOrgAddress(token);
+      if (tokenAddress && tokenAddress.toLowerCase() !== address.toLowerCase()) {
+        clearOrgToken();
+        setToken(null);
+      }
+    }
+  }, [status, address, token]);
 
   const login = useCallback(async () => {
     if (!address) {
