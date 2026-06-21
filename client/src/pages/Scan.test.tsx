@@ -36,7 +36,7 @@ describe("Staff scanner page", () => {
     renderWithProviders(<Scan />);
     expect(screen.getByText("Staff sign-in")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByPlaceholderText("K7P2-9QXM"), {
+    fireEvent.change(screen.getByPlaceholderText("K7P2-9QXM-3AB"), {
       target: { value: "ABCD-EFGH" },
     });
     fireEvent.click(screen.getByText("Start scanning"));

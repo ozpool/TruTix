@@ -89,7 +89,7 @@ function SignIn({ onAuthed }: { onAuthed: (code: string) => void }) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && void submit()}
-        placeholder="K7P2-9QXM"
+        placeholder="K7P2-9QXM-3AB"
         aria-label="Staff access code"
         autoCapitalize="characters"
         autoComplete="off"
