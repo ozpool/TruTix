@@ -1,6 +1,7 @@
 import { useOrg } from "../../org/context";
 import { decodeOrgAddress } from "../../lib/orgAuth";
 import { useOrgEvents } from "../../hooks/useOrgEvents";
+import { formatAddress, formatDateTime } from "../../lib/format";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Button, ButtonLink } from "../../components/ui/Button";
@@ -21,8 +22,8 @@ export function Dashboard() {
         <div className="space-y-1">
           <h1 className="text-3xl font-bold">Organizer</h1>
           {address && (
-            <p className="font-mono text-sm text-slate-400" title="Signed-in organizer">
-              {address}
+            <p className="font-mono text-sm text-slate-400" title={address}>
+              {formatAddress(address)}
             </p>
           )}
         </div>
@@ -60,7 +61,7 @@ export function Dashboard() {
               <div className="space-y-1">
                 <p className="font-display text-base">{e.name}</p>
                 <p className="text-sm text-slate-400">
-                  Event #{e.eventId} · capacity {e.capacity}
+                  {formatDateTime(e.startsAt)} · capacity {e.capacity}
                 </p>
               </div>
               <Badge tone="brand">Live</Badge>

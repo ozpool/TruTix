@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useAccount, useWriteContract } from "wagmi";
 import { formatEther } from "viem";
 import { useEvent } from "../hooks/useEvents";
+import { formatDateTime, formatTxHash, isPast } from "../lib/format";
 import { chainId, eventTicket } from "../contracts";
 import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
@@ -13,7 +14,7 @@ import { Spinner } from "../components/ui/Spinner";
 
 export function EventDetail() {
   const { eventId } = useParams();
-  const { data: event, isLoading } = useEvent(eventId);
+  const { data: event, isLoading, isError } = useEvent(eventId);
   const { isConnected } = useAccount();
   const { writeContract, isPending, data: hash, error } = useWriteContract();
   const [tier, setTier] = useState(0);
@@ -24,6 +25,7 @@ export function EventDetail() {
         <Spinner /> Loading…
       </p>
     );
+  if (isError) return <p className="text-rose-400">Couldn't load this event. Please try again.</p>;
   if (!event) return <p className="text-slate-400">Event not found.</p>;
 
   const price = BigInt(event.tierPrices[tier] ?? "0");
@@ -43,13 +45,16 @@ export function EventDetail() {
   return (
     <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
       <div className="space-y-4">
-        <Badge tone="brand">Event #{event.eventId}</Badge>
         <h1 className="text-3xl font-bold">{event.name}</h1>
+        <p className="flex items-center gap-2 text-slate-300">
+          {formatDateTime(event.startsAt)}
+          {isPast(event.startsAt) && <Badge tone="warn">Event ended</Badge>}
+        </p>
         {event.description && <p className="max-w-prose text-slate-300">{event.description}</p>}
         <div className="flex flex-wrap gap-2 pt-2">
           <Badge>Capacity {event.capacity}</Badge>
-          <Badge>Resale cap {event.maxResalePct}%</Badge>
-          <Badge>Royalty {event.royaltyBps / 100}%</Badge>
+          <Badge>Resale cap {event.maxResalePct}% over face</Badge>
+          <Badge>Creator royalty {event.royaltyBps / 100}%</Badge>
         </div>
       </div>
 
@@ -65,7 +70,7 @@ export function EventDetail() {
             >
               {event.tierPrices.map((tp, i) => (
                 <option key={i} value={i}>
-                  Tier {i} — {formatEther(BigInt(tp))} ETH
+                  Tier {i + 1} — {formatEther(BigInt(tp))} ETH
                 </option>
               ))}
             </select>
@@ -81,7 +86,7 @@ export function EventDetail() {
         )}
 
         {hash && (
-          <TxStatus tone="success">Minted! Transaction {hash.slice(0, 10)}… confirmed.</TxStatus>
+          <TxStatus tone="success">Minted! Transaction {formatTxHash(hash)} confirmed.</TxStatus>
         )}
         {error && <TxStatus tone="danger">Mint failed — check your wallet and try again.</TxStatus>}
       </Card>
