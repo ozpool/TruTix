@@ -1,8 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
-import { StaffAccount } from "../models";
-import { requireOrganizer, type AuthedRequest } from "../auth/middleware";
-import { signStaffToken } from "../auth/jwt";
+import { Event, StaffAccount } from "../models";
+import {
+  requireOrganizer,
+  requireStaff,
+  type AuthedRequest,
+  type StaffRequest,
+} from "../auth/middleware";
+import { generateStaffCode, hashStaffCode } from "../auth/staffCode";
 import { eventOrganizer } from "../chain/eventTicket";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -15,7 +20,9 @@ const createBody = z.object({
   label: z.string().optional(),
 });
 
-/// Organizer creates a staff account for an event/venue and gets its scoped token.
+/// Organizer creates a staff account for an event/venue and gets a one-time
+/// sign-in code. Only the code's hash is stored; the plaintext is returned here
+/// once and never again (use the reissue route to mint a fresh one).
 staffRouter.post("/", requireOrganizer, async (req: AuthedRequest, res) => {
   const organizer = req.organizer;
   if (!organizer) {
@@ -44,20 +51,20 @@ staffRouter.post("/", requireOrganizer, async (req: AuthedRequest, res) => {
     return;
   }
 
+  const code = generateStaffCode();
   const staff = await StaffAccount.create({
     eventId: parsed.data.eventId,
     venue: parsed.data.venue,
     label: parsed.data.label ?? "",
     createdBy: organizer,
+    codeHash: hashStaffCode(code),
   });
-  const token = signStaffToken({ staffId: staff.id, eventId: staff.eventId, venue: staff.venue });
-  res.status(201).json({ staffId: staff.id, token });
+  res.status(201).json({ staffId: staff.id, code });
 });
 
-/// Reissue a token for an existing staff account the caller owns. Tokens are
-/// stateless JWTs that aren't stored, so this is how an organizer retrieves one
-/// after the create-time reveal (e.g. to re-hand it to a door person).
-staffRouter.post("/:id/token", requireOrganizer, async (req: AuthedRequest, res) => {
+/// Reissue a fresh sign-in code for a staff account the caller owns. This
+/// rotates the stored hash, so any previously issued code stops working.
+staffRouter.post("/:id/code", requireOrganizer, async (req: AuthedRequest, res) => {
   const organizer = req.organizer;
   if (!organizer) {
     res.status(401).json({ error: "missing token" });
@@ -68,11 +75,13 @@ staffRouter.post("/:id/token", requireOrganizer, async (req: AuthedRequest, res)
     res.status(404).json({ error: "staff not found" });
     return;
   }
-  const token = signStaffToken({ staffId: staff.id, eventId: staff.eventId, venue: staff.venue });
-  res.json({ token });
+  const code = generateStaffCode();
+  staff.codeHash = hashStaffCode(code);
+  await staff.save();
+  res.json({ code });
 });
 
-/// Organizer lists staff, optionally filtered by event.
+/// Organizer lists staff, optionally filtered by event. Never returns codeHash.
 staffRouter.get("/", requireOrganizer, async (req: AuthedRequest, res) => {
   const organizer = req.organizer;
   if (!organizer) {
@@ -82,5 +91,21 @@ staffRouter.get("/", requireOrganizer, async (req: AuthedRequest, res) => {
   const eventId = Number(req.query.eventId);
   const filter: Record<string, unknown> = { createdBy: organizer };
   if (Number.isFinite(eventId)) filter.eventId = eventId;
-  res.json({ staff: await StaffAccount.find(filter) });
+  res.json({ staff: await StaffAccount.find(filter).select("-codeHash") });
+});
+
+/// Staff session: a door person validates their code and gets their scope
+/// (event name + venue) for the scanner header. Uses the staff code as bearer.
+staffRouter.get("/me", requireStaff, async (req: StaffRequest, res) => {
+  const staff = req.staff;
+  if (!staff) {
+    res.status(401).json({ error: "missing code" });
+    return;
+  }
+  const event = await Event.findOne({ eventId: staff.eventId }).select("name").lean();
+  res.json({
+    eventId: staff.eventId,
+    venue: staff.venue,
+    eventName: event?.name ?? "",
+  });
 });
