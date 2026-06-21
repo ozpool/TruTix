@@ -20,6 +20,9 @@ export interface ScanResult {
   eventId?: number;
   owner?: string;
   txHash?: string;
+  eventName?: string;
+  tier?: number;
+  seat?: number;
 }
 
 /// Parse the JSON a ticket pass encodes in its QR. Returns null if the text is

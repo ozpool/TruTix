@@ -1,33 +1,31 @@
-const STORAGE_KEY = "trutix.staffToken";
+import { apiGet } from "./api";
 
-export interface StaffClaims {
+const STORAGE_KEY = "trutix.staffCode";
+
+/// The scope a staff code unlocks, returned by the server after it validates
+/// the code. The code itself is opaque (no readable claims), so the scanner
+/// fetches this to label its header.
+export interface StaffSession {
   eventId: number;
   venue: string;
+  eventName: string;
 }
 
-export function getStaffToken(): string | null {
+export function getStaffCode(): string | null {
   return localStorage.getItem(STORAGE_KEY);
 }
 
-export function setStaffToken(token: string): void {
-  localStorage.setItem(STORAGE_KEY, token);
+export function setStaffCode(code: string): void {
+  localStorage.setItem(STORAGE_KEY, code);
 }
 
-export function clearStaffToken(): void {
+export function clearStaffCode(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
 
-/// Decode a JWT's payload for display only (no signature check — the backend
-/// is the authority). Returns null if the token is malformed.
-export function decodeStaffClaims(token: string): StaffClaims | null {
-  const segment = token.split(".")[1];
-  if (!segment) return null;
-  try {
-    const json = atob(segment.replace(/-/g, "+").replace(/_/g, "/"));
-    const claims = JSON.parse(json) as Partial<StaffClaims>;
-    if (typeof claims.eventId !== "number" || typeof claims.venue !== "string") return null;
-    return { eventId: claims.eventId, venue: claims.venue };
-  } catch {
-    return null;
-  }
+/// Validate a staff code against the server and return its scope. The code is
+/// the bearer credential; the server hashes it and looks up an active account.
+/// Rejects (throws) on an unknown or revoked code.
+export function fetchStaffSession(code: string): Promise<StaffSession> {
+  return apiGet<StaffSession>("/org/staff/me", code.trim());
 }
