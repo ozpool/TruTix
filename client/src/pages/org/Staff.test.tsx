@@ -22,8 +22,8 @@ describe("Staff management page", () => {
     vi.mocked(apiPost).mockReset();
   });
 
-  it("issues a token after creating staff", async () => {
-    vi.mocked(apiPost).mockResolvedValue({ token: "new-staff-jwt" });
+  it("issues a code after creating staff", async () => {
+    vi.mocked(apiPost).mockResolvedValue({ code: "K7P2-9QXM" });
     renderWithProviders(
       <OrgContext.Provider value={{ token: "jwt", logout: vi.fn() }}>
         <Staff />
@@ -34,9 +34,9 @@ describe("Staff management page", () => {
     fireEvent.change(screen.getByPlaceholderText("Venue / gate name"), {
       target: { value: "Main Gate" },
     });
-    fireEvent.click(screen.getByText("Create staff token"));
+    fireEvent.click(screen.getByText("Create staff code"));
 
-    await waitFor(() => expect(screen.getByText("new-staff-jwt")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("K7P2-9QXM")).toBeInTheDocument());
     expect(apiPost).toHaveBeenCalledWith(
       "/org/staff",
       { eventId: 7, venue: "Main Gate", label: "" },

@@ -10,8 +10,8 @@ import { Field, Input, controlClass } from "../../components/ui/Field";
 import { TxStatus } from "../../components/ui/TxStatus";
 
 /// Manage venue staff: pick one of the organizer's events, name a venue, and
-/// mint a scoped access token to hand to the door person. The token is shown
-/// once on creation, and can be reissued any time from the staff list.
+/// mint a scoped access code to hand to the door person. The code is shown once
+/// on creation, and a fresh one can be reissued any time from the staff list.
 export function Staff() {
   const { token } = useOrg();
   const queryClient = useQueryClient();
@@ -34,12 +34,12 @@ export function Staff() {
     }
     setBusy(true);
     try {
-      const res = await apiPost<{ token: string }>(
+      const res = await apiPost<{ code: string }>(
         "/org/staff",
         { eventId: Number(eventId), venue, label },
         token,
       );
-      setIssued(res.token);
+      setIssued(res.code);
       setVenue("");
       setLabel("");
       await queryClient.invalidateQueries({ queryKey: ["org-staff", token] });
@@ -55,7 +55,7 @@ export function Staff() {
       <header className="space-y-1">
         <h1 className="text-3xl font-bold">Staff</h1>
         <p className="text-sm text-slate-400">
-          Issue a scoped token the door person pastes into the scanner.
+          Issue a scoped access code the door person enters in the scanner.
         </p>
       </header>
 
@@ -71,7 +71,7 @@ export function Staff() {
               <option value="">Select an event…</option>
               {events?.map((ev) => (
                 <option key={ev.eventId} value={ev.eventId}>
-                  {ev.name} (#{ev.eventId})
+                  {ev.name}
                 </option>
               ))}
             </select>
@@ -87,7 +87,7 @@ export function Staff() {
             />
           )}
         </Field>
-        <Field label="Staff name" hint="Optional — a label to recognise this token later.">
+        <Field label="Staff name" hint="Optional — a label to recognise this code later.">
           {(p) => (
             <Input
               {...p}
@@ -99,22 +99,22 @@ export function Staff() {
         </Field>
         {error && <TxStatus tone="danger">{error}</TxStatus>}
         <Button loading={busy} onClick={() => void create()}>
-          Create staff token
+          Create staff code
         </Button>
 
         {issued && (
           <div className="space-y-2 rounded-xl border border-emerald-700/60 bg-emerald-950/40 p-4">
             <p className="text-sm text-emerald-300">
-              Give this token to the staff member. It's shown once here.
+              Give this code to the staff member. It's shown once here.
             </p>
-            <code className="block break-all rounded-lg bg-ink-950 p-2 font-mono text-xs text-slate-300">
+            <code className="block rounded-lg bg-ink-950 p-2 text-center font-mono text-lg tracking-widest text-slate-100">
               {issued}
             </code>
             <button
               className="text-sm text-brand-300 underline-offset-2 hover:underline"
               onClick={() => void navigator.clipboard.writeText(issued)}
             >
-              Copy token
+              Copy code
             </button>
           </div>
         )}
@@ -124,26 +124,40 @@ export function Staff() {
         <h2 className="font-display text-lg">Existing staff</h2>
         {staff?.length === 0 && <p className="text-sm text-slate-500">None yet.</p>}
         {staff?.map((s) => (
-          <StaffRow key={s._id} staff={s} orgToken={token} />
+          <StaffRow
+            key={s._id}
+            staff={s}
+            eventName={events?.find((e) => e.eventId === s.eventId)?.name ?? "Event"}
+            orgToken={token}
+          />
         ))}
       </div>
     </section>
   );
 }
 
-/// One staff account with an on-demand "Show token" — the token isn't stored,
-/// so it is reissued from the server when the organizer needs it again.
-function StaffRow({ staff, orgToken }: { staff: StaffMember; orgToken: string }) {
-  const [token, setToken] = useState<string | null>(null);
+/// One staff account. The code's hash is stored, never the code, so the
+/// organizer can't re-view a lost code — only mint a fresh one, which rotates
+/// the hash and stops the previous code working.
+function StaffRow({
+  staff,
+  eventName,
+  orgToken,
+}: {
+  staff: StaffMember;
+  eventName: string;
+  orgToken: string;
+}) {
+  const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function reveal() {
+  async function rotate() {
     setError(null);
     try {
-      const res = await apiPost<{ token: string }>(`/org/staff/${staff._id}/token`, {}, orgToken);
-      setToken(res.token);
+      const res = await apiPost<{ code: string }>(`/org/staff/${staff._id}/code`, {}, orgToken);
+      setCode(res.code);
     } catch {
-      setError("Could not reissue the token.");
+      setError("Could not issue a new code.");
     }
   }
 
@@ -151,25 +165,28 @@ function StaffRow({ staff, orgToken }: { staff: StaffMember; orgToken: string })
     <Card className="space-y-2 py-3 text-sm">
       <div className="flex items-center justify-between gap-3">
         <span>
-          {staff.label || "Staff"} · {staff.venue} · event #{staff.eventId}
+          {staff.label || "Staff"} · {staff.venue} · {eventName}
         </span>
         <button
           className="whitespace-nowrap text-brand-300 underline-offset-2 hover:underline"
-          onClick={() => void reveal()}
+          onClick={() => void rotate()}
         >
-          {token ? "Reissue" : "Show token"}
+          {code ? "Issue another" : "Issue new code"}
         </button>
       </div>
-      {token && (
+      {code && (
         <>
-          <code className="block break-all rounded-lg bg-ink-950 p-2 font-mono text-xs text-slate-300">
-            {token}
+          <p className="text-xs text-amber-300">
+            New code — the previous one no longer works. Shown once.
+          </p>
+          <code className="block rounded-lg bg-ink-950 p-2 text-center font-mono text-base tracking-widest text-slate-100">
+            {code}
           </code>
           <button
             className="text-xs text-brand-300 underline-offset-2 hover:underline"
-            onClick={() => void navigator.clipboard.writeText(token)}
+            onClick={() => void navigator.clipboard.writeText(code)}
           >
-            Copy token
+            Copy code
           </button>
         </>
       )}
