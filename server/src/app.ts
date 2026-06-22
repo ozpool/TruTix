@@ -1,5 +1,10 @@
+import "express-async-errors";
 import express, { type Express } from "express";
 import cors from "cors";
+import helmet from "helmet";
+import { corsOrigins } from "./config";
+import { apiLimiter, authLimiter } from "./middleware/rateLimit";
+import { errorHandler } from "./middleware/errorHandler";
 import { healthRouter } from "./routes/health";
 import { authRouter } from "./routes/auth";
 import { staffRouter } from "./routes/staff";
@@ -14,10 +19,15 @@ import { ticketsRouter } from "./routes/tickets";
 /// Build the Express app without binding a port, so tests can drive it directly.
 export function createApp(): Express {
   const app = express();
-  app.use(cors());
-  app.use(express.json());
+  // Trust the proxy (Render/Vercel) so rate-limit sees the real client IP.
+  app.set("trust proxy", 1);
+  app.use(helmet());
+  app.use(cors({ origin: corsOrigins }));
+  app.use(express.json({ limit: "16kb" }));
+  app.use(apiLimiter);
+
   app.use("/health", healthRouter);
-  app.use("/auth", authRouter);
+  app.use("/auth", authLimiter, authRouter);
   app.use("/org/staff", staffRouter);
   app.use("/org/events", orgEventsRouter);
   app.use("/org/redeemer", redeemerRouter);
@@ -26,5 +36,7 @@ export function createApp(): Express {
   app.use("/events", eventsRouter);
   app.use("/resale", resaleRouter);
   app.use("/tickets", ticketsRouter);
+
+  app.use(errorHandler);
   return app;
 }
