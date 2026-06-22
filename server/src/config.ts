@@ -42,4 +42,9 @@ if (!isLocalEnv) {
   if (config.CLIENT_ORIGIN === "http://localhost:5173") {
     throw new Error("CLIENT_ORIGIN must be set to the deployment origin(s) outside development");
   }
+  // Redemption cannot work without the redeemer key; fail at boot rather than
+  // at the gate when a staff member scans the first ticket.
+  if (!/^0x[0-9a-fA-F]{64}$/.test(config.BACKEND_PRIVATE_KEY ?? "")) {
+    throw new Error("BACKEND_PRIVATE_KEY must be a 32-byte hex key outside development");
+  }
 }
