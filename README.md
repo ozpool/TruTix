@@ -105,9 +105,10 @@ pnpm build
 - **Client → Vercel.** Set the root directory to `client`, build with
   `pnpm build`, and add the `VITE_*` variables above.
 - **API → Render.** Import `render.yaml` as a Blueprint and fill the secret
-  variables in the dashboard. The chain indexer watches from the latest block
-  forward and does not backfill, so an always-on instance is recommended for
-  production.
+  variables in the dashboard. The chain indexer persists its last-processed
+  block, so after a restart or RPC outage it resumes from that cursor and
+  replays the blocks it missed rather than dropping them. An always-on instance
+  is still recommended to keep the cache close to the chain head.
 
 ## License
 
