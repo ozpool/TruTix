@@ -32,6 +32,9 @@ export function generateStaffCode(): string {
 /// storing the code itself. Normalizes case and separators first, so "k7p2-9qxm"
 /// and "K7P29QXM" resolve to the same account.
 export function hashStaffCode(code: string): string {
-  const normalized = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const normalized = code
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
   return createHash("sha256").update(normalized).digest("hex");
 }

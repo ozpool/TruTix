@@ -35,7 +35,9 @@ export function RedemptionLog() {
       <header className="space-y-1">
         <h1 className="text-2xl font-bold">Redemption log</h1>
         <p className="text-sm text-slate-400">
-          {session.data ? `${session.data.eventName || "Event"} · ${session.data.venue}` : "Loading…"}{" "}
+          {session.data
+            ? `${session.data.eventName || "Event"} · ${session.data.venue}`
+            : "Loading…"}{" "}
           ·{" "}
           <Link to="/scan" className="font-medium text-brand-300 hover:text-brand-200">
             back to scanner

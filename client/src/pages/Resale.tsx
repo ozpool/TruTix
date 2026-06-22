@@ -110,9 +110,7 @@ export function Resale() {
                     <span className="font-mono text-sm text-citrus-300">
                       {formatEther(BigInt(l.price))} ETH
                     </span>
-                    <span className="text-xs text-slate-500">
-                      Seller {formatAddress(l.seller)}
-                    </span>
+                    <span className="text-xs text-slate-500">Seller {formatAddress(l.seller)}</span>
                   </div>
                 </div>
               </div>

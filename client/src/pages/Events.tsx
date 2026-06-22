@@ -18,8 +18,7 @@ export function Events() {
     const q = query.trim().toLowerCase();
     if (!q) return events ?? [];
     return (events ?? []).filter(
-      (e) =>
-        e.name.toLowerCase().includes(q) || e.description.toLowerCase().includes(q),
+      (e) => e.name.toLowerCase().includes(q) || e.description.toLowerCase().includes(q),
     );
   }, [events, query]);
 
