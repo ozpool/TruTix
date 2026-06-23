@@ -11,8 +11,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // Refetch when the tab regains focus or the network reconnects, so data
-      // is never stale after the user looks away. Block-driven invalidation
-      // (useLiveSync) handles in-session freshness.
+      // is never stale after the user looks away. A timed re-pull of the API
+      // cache (useLiveSync) handles in-session freshness.
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
       staleTime: 5_000,

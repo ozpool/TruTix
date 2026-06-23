@@ -21,6 +21,6 @@ describe("Organizer dashboard", () => {
     );
 
     expect(screen.getByText("Jazz Night")).toBeInTheDocument();
-    expect(screen.getByText(/Event #7/)).toBeInTheDocument();
+    expect(screen.getByText(/capacity 200/)).toBeInTheDocument();
   });
 });

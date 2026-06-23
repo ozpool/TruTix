@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useTickets } from "../hooks/useTickets";
 import { useEventMap } from "../hooks/useEvents";
+import { formatDateTime } from "../lib/format";
 import { ButtonLink } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Spinner } from "../components/ui/Spinner";
@@ -48,6 +49,11 @@ export function Me() {
                   <div className="flex items-center justify-between gap-3 border-b border-dashed border-ink-600 p-5">
                     <div className="min-w-0">
                       <p className="truncate font-display text-lg">{events.name(t.eventId)}</p>
+                      {events.get(t.eventId)?.startsAt && (
+                        <p className="truncate text-xs text-slate-400">
+                          {formatDateTime(events.get(t.eventId)?.startsAt)}
+                        </p>
+                      )}
                       <p className="text-xs text-slate-500">Ticket #{t.tokenId}</p>
                     </div>
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-500/15 text-brand-300">
@@ -56,7 +62,7 @@ export function Me() {
                   </div>
                   <div className="flex items-center justify-between p-5 text-sm text-slate-400">
                     <span>
-                      Tier {t.tier} · Seat {t.seat}
+                      Tier {t.tier + 1} · Seat {t.seat}
                     </span>
                     <span className="font-medium text-brand-300 group-hover:text-brand-200">
                       Show pass →

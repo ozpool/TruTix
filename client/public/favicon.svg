@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="TruTix">
+  <defs>
+    <linearGradient id="t" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9c86ff" />
+      <stop offset="1" stop-color="#5b3df0" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="#0d0d17" />
+  <rect x="3" y="3" width="26" height="26" rx="6" fill="url(#t)" />
+  <path d="M9 11.5h14M16 11.5v11" stroke="#08080f" stroke-width="3.2" stroke-linecap="round" />
+  <circle cx="22.5" cy="21.5" r="2.4" fill="#c8ff4d" />
+</svg>

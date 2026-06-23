@@ -7,6 +7,7 @@ import { setupDb, teardownDb } from "./helpers/db";
 import { createApp } from "../src/app";
 import { requireStaff, type StaffRequest } from "../src/auth/middleware";
 import { eventOrganizer } from "../src/chain/eventTicket";
+import { StaffAccount } from "../src/models";
 
 vi.mock("../src/chain/eventTicket", () => ({
   eventOrganizer: vi.fn(),
@@ -52,7 +53,7 @@ describe("staff accounts and tokens", () => {
       .send({ eventId: 1, venue: "Main Gate", label: "Sam" });
 
     expect(res.status).toBe(201);
-    expect(res.body.token).toBeTypeOf("string");
+    expect(res.body.code).toBeTypeOf("string");
     expect(res.body.staffId).toBeTypeOf("string");
   });
 
@@ -76,7 +77,7 @@ describe("staff accounts and tokens", () => {
 });
 
 describe("requireStaff middleware", () => {
-  it("accepts a valid staff token and exposes its scope", async () => {
+  it("accepts a valid staff code and exposes its scope", async () => {
     const account = privateKeyToAccount(generatePrivateKey());
     vi.mocked(eventOrganizer).mockResolvedValue(account.address);
     const orgToken = await organizerToken(account);
@@ -87,14 +88,32 @@ describe("requireStaff middleware", () => {
 
     const res = await request(staffApp())
       .get("/whoami")
-      .set("Authorization", `Bearer ${created.body.token}`);
+      .set("Authorization", `Bearer ${created.body.code}`);
 
     expect(res.status).toBe(200);
     expect(res.body.eventId).toBe(5);
     expect(res.body.venue).toBe("Side Door");
   });
 
-  it("rejects a missing token", async () => {
+  it("rejects a revoked staff code", async () => {
+    const account = privateKeyToAccount(generatePrivateKey());
+    vi.mocked(eventOrganizer).mockResolvedValue(account.address);
+    const orgToken = await organizerToken(account);
+    const created = await request(app)
+      .post("/org/staff")
+      .set("Authorization", `Bearer ${orgToken}`)
+      .send({ eventId: 5, venue: "Side Door" });
+
+    await StaffAccount.findByIdAndUpdate(created.body.staffId, { active: false });
+
+    const res = await request(staffApp())
+      .get("/whoami")
+      .set("Authorization", `Bearer ${created.body.code}`);
+
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects a missing code", async () => {
     const res = await request(staffApp()).get("/whoami");
     expect(res.status).toBe(401);
   });

@@ -1,5 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
-import { verifyOrganizerToken, verifyStaffToken } from "./jwt";
+import { verifyOrganizerToken } from "./jwt";
+import { hashStaffCode } from "./staffCode";
+import { StaffAccount } from "../models";
 
 export interface AuthedRequest extends Request {
   organizer?: string;
@@ -29,18 +31,24 @@ export function requireOrganizer(req: AuthedRequest, res: Response, next: NextFu
   }
 }
 
-/// Gate a route to authenticated venue staff; attaches `req.staff` with its scope.
+/// Gate a route to authenticated venue staff; attaches `req.staff` with its
+/// scope. The bearer credential is the staff sign-in code: we hash it and look
+/// up an active account, so codes are revocable (set active=false) and a leaked
+/// DB row (which holds only the hash) can't be used to sign in.
 export function requireStaff(req: StaffRequest, res: Response, next: NextFunction): void {
-  const token = bearer(req);
-  if (!token) {
-    res.status(401).json({ error: "missing token" });
+  const code = bearer(req);
+  if (!code) {
+    res.status(401).json({ error: "missing code" });
     return;
   }
-  try {
-    const claims = verifyStaffToken(token);
-    req.staff = { staffId: claims.sub, eventId: claims.eventId, venue: claims.venue };
-    next();
-  } catch {
-    res.status(401).json({ error: "invalid token" });
-  }
+  StaffAccount.findOne({ codeHash: hashStaffCode(code), active: true })
+    .then((account) => {
+      if (!account) {
+        res.status(401).json({ error: "invalid code" });
+        return;
+      }
+      req.staff = { staffId: account.id, eventId: account.eventId, venue: account.venue };
+      next();
+    })
+    .catch(() => res.status(500).json({ error: "auth lookup failed" }));
 }

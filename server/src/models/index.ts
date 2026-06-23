@@ -4,3 +4,4 @@ export { StaffAccount, type StaffAccountDoc } from "./StaffAccount";
 export { RedemptionLog, type RedemptionLogDoc } from "./RedemptionLog";
 export { ResaleListing, type ResaleListingDoc } from "./ResaleListing";
 export { TicketOwner, type TicketOwnerDoc } from "./TicketOwner";
+export { IndexerState, type IndexerStateDoc } from "./IndexerState";

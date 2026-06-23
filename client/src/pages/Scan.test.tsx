@@ -2,10 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "../test/helpers";
 import { Scan } from "./Scan";
-import { clearStaffToken } from "../lib/staffAuth";
+import { clearStaffCode, fetchStaffSession, setStaffCode } from "../lib/staffAuth";
 import { submitScan } from "../lib/scan";
 
 const MOCK_QR = JSON.stringify({ tokenId: 1, timestamp: 123, signature: "0xabc" });
+const SESSION = { eventId: 5, venue: "Side Door", eventName: "Jazz Night" };
 
 vi.mock("../components/QrScanner", () => ({
   QrScanner: ({ onResult }: { onResult: (t: string) => void }) => (
@@ -18,32 +19,42 @@ vi.mock("../lib/scan", async (orig) => {
   return { ...actual, submitScan: vi.fn() };
 });
 
-function makeToken(payload: object): string {
-  const body = btoa(JSON.stringify(payload)).replace(/\+/g, "-").replace(/\//g, "_");
-  return `header.${body}.sig`;
-}
+vi.mock("../lib/staffAuth", async (orig) => {
+  const actual = await orig<typeof import("../lib/staffAuth")>();
+  return { ...actual, fetchStaffSession: vi.fn() };
+});
 
 describe("Staff scanner page", () => {
   beforeEach(() => {
-    clearStaffToken();
+    clearStaffCode();
     vi.mocked(submitScan).mockReset();
+    vi.mocked(fetchStaffSession).mockReset();
   });
 
-  it("shows the sign-in form until a valid token is pasted", () => {
+  it("shows the sign-in form until a valid code is entered", async () => {
+    vi.mocked(fetchStaffSession).mockResolvedValue(SESSION);
     renderWithProviders(<Scan />);
     expect(screen.getByText("Staff sign-in")).toBeInTheDocument();
 
-    const token = makeToken({ eventId: 5, venue: "Side Door" });
-    fireEvent.change(screen.getByPlaceholderText(/eyJ/), { target: { value: token } });
+    fireEvent.change(screen.getByPlaceholderText("K7P2-9QXM-3AB"), {
+      target: { value: "ABCD-EFGH" },
+    });
     fireEvent.click(screen.getByText("Start scanning"));
 
-    expect(screen.getByText("Gate scanner")).toBeInTheDocument();
-    expect(screen.getByText(/Event 5/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Gate scanner")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Jazz Night/)).toBeInTheDocument());
   });
 
   it("admits a ticket when the gate returns valid", async () => {
-    localStorage.setItem("trutix.staffToken", makeToken({ eventId: 5, venue: "Side Door" }));
-    vi.mocked(submitScan).mockResolvedValue({ state: "valid", owner: "0xowner" });
+    setStaffCode("ABCD-EFGH");
+    vi.mocked(fetchStaffSession).mockResolvedValue(SESSION);
+    vi.mocked(submitScan).mockResolvedValue({
+      state: "valid",
+      owner: "0xowner",
+      eventName: "Jazz Night",
+      tier: 0,
+      seat: 12,
+    });
 
     renderWithProviders(<Scan />);
     fireEvent.click(screen.getByText("fire-scan"));

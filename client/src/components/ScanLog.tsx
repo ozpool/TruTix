@@ -1,20 +1,10 @@
 import { type Redemption } from "../hooks/useRedemptions";
+import { formatAddress, formatTime } from "../lib/format";
 import { Card } from "./ui/Card";
 import { EmptyState } from "./ui/EmptyState";
 import { CheckIcon } from "./ui/icons";
 
 const EXPLORER = "https://sepolia.basescan.org/tx";
-
-function shortAddr(a: string) {
-  return a && a.length > 10 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a || "—";
-}
-
-function timeLabel(iso: string) {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? ""
-    : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
 
 /// The list of holders already admitted at this gate, newest first. Shown to
 /// staff so they can see exactly who they have scanned in, with the wallet,
@@ -50,11 +40,13 @@ export function ScanLog({ redemptions }: { redemptions: Redemption[] | undefined
               </span>
               <div className="min-w-0">
                 <p className="font-medium">Ticket #{r.tokenId}</p>
-                <p className="truncate font-mono text-xs text-slate-400">{shortAddr(r.owner)}</p>
+                <p className="truncate font-mono text-xs text-slate-400">
+                  {formatAddress(r.owner)}
+                </p>
               </div>
             </div>
             <div className="shrink-0 text-right">
-              <p className="text-xs text-slate-400">{timeLabel(r.redeemedAt)}</p>
+              <p className="text-xs text-slate-400">{formatTime(r.redeemedAt)}</p>
               {r.txHash && (
                 <a
                   href={`${EXPLORER}/${r.txHash}`}
