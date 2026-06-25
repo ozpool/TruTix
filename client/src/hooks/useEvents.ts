@@ -16,6 +16,7 @@ export interface EventSummary {
   royaltyBps: number;
   startsAt: string;
   tierPrices: string[];
+  tierNames: string[];
 }
 
 export function useEvents() {

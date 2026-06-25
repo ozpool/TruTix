@@ -12,6 +12,7 @@ export interface EventDraft {
   royaltyPct: string;
   startsAt: string;
   prices: string[];
+  names: string[];
 }
 
 type Phase = "form" | "confirming" | "granting" | "done";
@@ -81,6 +82,7 @@ export function useCreateEvent(token: string) {
         royaltyBps: Math.round(Number(draft.royaltyPct) * 100),
         startsAt: new Date(draft.startsAt).toISOString(),
         tierPrices: draft.prices.map((p) => parseEther(p).toString()),
+        tierNames: draft.names.map((n) => n.trim()),
       },
       token,
     ).catch(() =>
@@ -126,5 +128,13 @@ export function useCreateEvent(token: string) {
     if (grant.error && phase === "granting") finishWithoutGrant("transaction not confirmed");
   }, [grant.error]);
 
-  return { phase, error, txError: create.error, warning, eventId, submit };
+  return {
+    phase,
+    error,
+    txError: create.error,
+    warning,
+    eventId,
+    txHash: create.data,
+    submit,
+  };
 }
