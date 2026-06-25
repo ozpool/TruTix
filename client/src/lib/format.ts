@@ -12,6 +12,28 @@ export function formatTxHash(hash: string | undefined | null, keep = 10): string
   return hash ? `${hash.slice(0, keep)}…` : "";
 }
 
+/// Base Sepolia block explorer. Every on-chain action links here so users can
+/// watch their transaction confirm in real time instead of trusting the UI.
+const EXPLORER = "https://sepolia.basescan.org";
+
+/// Link to a transaction on the explorer (live status as it confirms).
+export function explorerTxUrl(hash: string): string {
+  return `${EXPLORER}/tx/${hash}`;
+}
+
+/// Link to a wallet / contract address on the explorer.
+export function explorerAddressUrl(address: string): string {
+  return `${EXPLORER}/address/${address}`;
+}
+
+/// Human label for a price tier. Uses the organizer's name ("Platinum",
+/// "Balcony") when set, falling back to a generic "Tier N" so older events and
+/// half-filled forms still read cleanly.
+export function tierLabel(tier: { tierNames?: string[] } | undefined, index: number): string {
+  const name = tier?.tierNames?.[index]?.trim();
+  return name || `Tier ${index + 1}`;
+}
+
 const DATE_TIME: Intl.DateTimeFormatOptions = {
   weekday: "short",
   day: "numeric",

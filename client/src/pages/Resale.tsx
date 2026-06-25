@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { formatEther } from "viem";
 import { useResale } from "../hooks/useResale";
 import { useEventMap } from "../hooks/useEvents";
-import { formatAddress, formatDateTime, formatTxHash } from "../lib/format";
+import { formatAddress, formatDateTime } from "../lib/format";
 import { chainId, marketplace } from "../contracts";
 import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
@@ -14,6 +14,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { SearchInput } from "../components/ui/SearchInput";
 import { Spinner } from "../components/ui/Spinner";
 import { HelpHint } from "../components/ui/HelpHint";
+import { TxLink } from "../components/ui/TxLink";
 import { StoreIcon, TicketIcon } from "../components/ui/icons";
 
 /// Public marketplace: every active resale listing with a buy button. The price
@@ -127,7 +128,9 @@ export function Resale() {
       )}
 
       {hash && (
-        <TxStatus tone="success">Purchase submitted. Transaction {formatTxHash(hash)}</TxStatus>
+        <TxStatus tone="success">
+          Purchase submitted. <TxLink hash={hash} label="Track it live on BaseScan" />
+        </TxStatus>
       )}
     </section>
   );
