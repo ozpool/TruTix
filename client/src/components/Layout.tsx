@@ -9,6 +9,7 @@ const links = [
   { to: "/me", label: "My Tickets" },
   { to: "/org", label: "Organizer" },
   { to: "/scan", label: "Scan" },
+  { to: "/whitepaper", label: "Docs" },
 ];
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
