@@ -14,6 +14,7 @@ import { Scan } from "./pages/Scan";
 import { RedemptionLog } from "./pages/RedemptionLog";
 import { Resale } from "./pages/Resale";
 import { MyListings } from "./pages/MyListings";
+import { Whitepaper } from "./pages/Whitepaper";
 import { Placeholder } from "./pages/Placeholder";
 import { useLiveSync } from "./hooks/useLiveSync";
 
@@ -67,6 +68,7 @@ export function App() {
 
         <Route path="scan" element={<Scan />} />
         <Route path="scan/log" element={<RedemptionLog />} />
+        <Route path="whitepaper" element={<Whitepaper />} />
         <Route path="*" element={<Placeholder title="Not found" />} />
       </Route>
     </Routes>

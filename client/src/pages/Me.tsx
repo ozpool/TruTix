@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useTickets } from "../hooks/useTickets";
 import { useEventMap } from "../hooks/useEvents";
-import { formatDateTime } from "../lib/format";
+import { formatDateTime, tierLabel } from "../lib/format";
 import { ButtonLink } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Spinner } from "../components/ui/Spinner";
@@ -62,7 +62,7 @@ export function Me() {
                   </div>
                   <div className="flex items-center justify-between p-5 text-sm text-slate-400">
                     <span>
-                      Tier {t.tier + 1} · Seat {t.seat}
+                      {tierLabel(events.get(t.eventId), t.tier)} · Seat {t.seat}
                     </span>
                     <span className="font-medium text-brand-300 group-hover:text-brand-200">
                       Show pass →

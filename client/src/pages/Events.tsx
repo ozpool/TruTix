@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatEther } from "viem";
 import { useEvents } from "../hooks/useEvents";
-import { formatDateTime, isPast } from "../lib/format";
+import { formatDate, isPast } from "../lib/format";
 import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -55,36 +55,41 @@ export function Events() {
           hint="Try a different search term."
         />
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2">
-          {filtered.map((event) => (
-            <li key={event.eventId}>
-              <Link
-                to={`/events/${event.eventId}`}
-                className="block rounded-2xl focus-visible:outline-none"
-              >
-                <Card interactive className="h-full">
-                  <div className="flex items-start justify-between gap-3">
-                    <h2 className="font-display text-lg text-slate-100">{event.name}</h2>
-                    <Badge tone="citrus">
-                      {formatEther(BigInt(event.tierPrices[0] ?? "0"))} ETH
-                    </Badge>
-                  </div>
-                  <p className="mt-1 flex items-center gap-2 text-sm text-slate-400">
-                    {formatDateTime(event.startsAt)}
-                    {isPast(event.startsAt) && (
-                      <Badge tone="neutral" className="text-[10px]">
-                        Ended
-                      </Badge>
-                    )}
-                  </p>
-                  {event.description && (
-                    <p className="mt-2 line-clamp-2 text-sm text-slate-400">{event.description}</p>
-                  )}
-                  <p className="mt-4 text-sm font-medium text-brand-300">View event →</p>
-                </Card>
-              </Link>
-            </li>
-          ))}
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((event) => {
+            const ended = isPast(event.startsAt);
+            const prices = event.tierPrices.map((p) => BigInt(p));
+            const from = prices.length ? prices.reduce((a, b) => (b < a ? b : a)) : 0n;
+            return (
+              <li key={event.eventId}>
+                <Link
+                  to={`/events/${event.eventId}`}
+                  className="block h-full rounded-2xl focus-visible:outline-none"
+                >
+                  <Card interactive className="flex h-full flex-col p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <h2 className="line-clamp-1 font-display text-base leading-snug text-slate-100">
+                        {event.name}
+                      </h2>
+                      {ended && (
+                        <Badge tone="neutral" className="shrink-0 text-[10px]">
+                          Ended
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-slate-400">{formatDate(event.startsAt)}</p>
+                    <div className="mt-3 flex items-end justify-between gap-2">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-slate-500">From</p>
+                        <p className="font-mono text-sm text-citrus-300">{formatEther(from)} ETH</p>
+                      </div>
+                      <span className="text-xs font-medium text-brand-300">View →</span>
+                    </div>
+                  </Card>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

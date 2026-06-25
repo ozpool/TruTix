@@ -21,7 +21,12 @@ describe("My resale listings page", () => {
     vi.mocked(useTickets).mockReturnValue({
       data: [{ tokenId: 9, eventId: 7, owner: "0xabc", tier: 0, seat: 1 }],
     } as ReturnType<typeof useTickets>);
-    vi.mocked(useListTicket).mockReturnValue({ phase: "idle", error: null, start });
+    vi.mocked(useListTicket).mockReturnValue({
+      phase: "idle",
+      error: null,
+      hash: undefined,
+      start,
+    });
   });
 
   it("starts a listing for the chosen ticket and price", () => {

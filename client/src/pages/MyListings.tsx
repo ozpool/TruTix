@@ -11,6 +11,7 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Field, Input, controlClass } from "../components/ui/Field";
 import { TxStatus } from "../components/ui/TxStatus";
+import { TxLink } from "../components/ui/TxLink";
 import { EmptyState } from "../components/ui/EmptyState";
 
 /// A seller's view: list a held ticket (approve + list) and cancel active
@@ -21,12 +22,12 @@ export function MyListings() {
   const { data: listings } = useResale();
   const events = useEventMap();
   const { data: tickets } = useTickets(address);
-  const { writeContract } = useWriteContract();
+  const { writeContract, data: cancelHash } = useWriteContract();
 
   const [tokenId, setTokenId] = useState("");
   const [price, setPrice] = useState("0.05");
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["resale"] });
-  const { phase, error, start } = useListTicket(refresh);
+  const { phase, error, hash, start } = useListTicket(refresh);
 
   const mine = listings?.filter((l) => l.seller.toLowerCase() === address?.toLowerCase());
   const busy = phase === "approving" || phase === "listing";
@@ -93,10 +94,19 @@ export function MyListings() {
           </Button>
         </div>
         {phase === "done" && (
-          <TxStatus tone="success">Listed — it's live on the marketplace.</TxStatus>
+          <TxStatus tone="success">
+            Listed — it's live on the marketplace.{" "}
+            {hash && <TxLink hash={hash} label="View on BaseScan" />}
+          </TxStatus>
         )}
         {error && <TxStatus tone="danger">{error}</TxStatus>}
       </Card>
+
+      {cancelHash && (
+        <TxStatus tone="info">
+          Cancellation submitted. <TxLink hash={cancelHash} label="Track it live on BaseScan" />
+        </TxStatus>
+      )}
 
       <div className="space-y-3">
         <h2 className="font-display text-lg">Active listings</h2>

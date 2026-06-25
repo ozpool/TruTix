@@ -3,13 +3,14 @@ import { useParams } from "react-router-dom";
 import { useAccount, useWriteContract } from "wagmi";
 import { formatEther } from "viem";
 import { useEvent } from "../hooks/useEvents";
-import { formatDateTime, formatTxHash, isPast } from "../lib/format";
+import { formatDateTime, isPast, tierLabel } from "../lib/format";
+import { cn } from "../lib/cn";
 import { chainId, eventTicket } from "../contracts";
 import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import { Field, controlClass } from "../components/ui/Field";
 import { TxStatus } from "../components/ui/TxStatus";
+import { TxLink } from "../components/ui/TxLink";
 import { Spinner } from "../components/ui/Spinner";
 
 export function EventDetail() {
@@ -28,6 +29,7 @@ export function EventDetail() {
   if (isError) return <p className="text-rose-400">Couldn't load this event. Please try again.</p>;
   if (!event) return <p className="text-slate-400">Event not found.</p>;
 
+  const ended = isPast(event.startsAt);
   const price = BigInt(event.tierPrices[tier] ?? "0");
 
   function mint() {
@@ -44,49 +46,97 @@ export function EventDetail() {
 
   return (
     <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold">{event.name}</h1>
-        <p className="flex items-center gap-2 text-slate-300">
-          {formatDateTime(event.startsAt)}
-          {isPast(event.startsAt) && <Badge tone="warn">Event ended</Badge>}
-        </p>
-        {event.description && <p className="max-w-prose text-slate-300">{event.description}</p>}
-        <div className="flex flex-wrap gap-2 pt-2">
-          <Badge>Capacity {event.capacity}</Badge>
-          <Badge>Resale cap {event.maxResalePct}% over face</Badge>
-          <Badge>Creator royalty {event.royaltyBps / 100}%</Badge>
+      {/* Left: full event details */}
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">{event.name}</h1>
+          <p className="flex items-center gap-2 text-slate-300">
+            {formatDateTime(event.startsAt)}
+            {ended && <Badge tone="warn">Event ended</Badge>}
+          </p>
         </div>
+
+        {event.description && (
+          <p className="max-w-prose whitespace-pre-line text-slate-300">{event.description}</p>
+        )}
+
+        <dl className="grid max-w-md gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-ink-700 bg-ink-900/60 p-3">
+            <dt className="text-xs text-slate-500">Capacity</dt>
+            <dd className="mt-0.5 font-display text-lg text-slate-100">{event.capacity}</dd>
+          </div>
+          <div className="rounded-xl border border-ink-700 bg-ink-900/60 p-3">
+            <dt className="text-xs text-slate-500">Resale cap</dt>
+            <dd className="mt-0.5 font-display text-lg text-slate-100">+{event.maxResalePct}%</dd>
+          </div>
+          <div className="rounded-xl border border-ink-700 bg-ink-900/60 p-3">
+            <dt className="text-xs text-slate-500">Creator royalty</dt>
+            <dd className="mt-0.5 font-display text-lg text-slate-100">
+              {event.royaltyBps / 100}%
+            </dd>
+          </div>
+        </dl>
+
+        <p className="max-w-prose text-xs text-slate-500">
+          Resale is capped at {event.maxResalePct}% over face value — enforced by the contract, not
+          just the app. The creator earns {event.royaltyBps / 100}% on every resale.
+        </p>
       </div>
 
+      {/* Right: pick a tier and buy */}
       <Card className="h-fit space-y-4">
         <h2 className="font-display text-lg">Get a ticket</h2>
-        <Field label="Tier">
-          {(p) => (
-            <select
-              {...p}
-              value={tier}
-              onChange={(e) => setTier(Number(e.target.value))}
-              className={controlClass}
-            >
-              {event.tierPrices.map((tp, i) => (
-                <option key={i} value={i}>
-                  Tier {i + 1} — {formatEther(BigInt(tp))} ETH
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
 
-        {isConnected ? (
+        <fieldset className="space-y-2">
+          <legend className="sr-only">Choose a ticket tier</legend>
+          {event.tierPrices.map((tp, i) => {
+            const selected = tier === i;
+            return (
+              <label
+                key={i}
+                className={cn(
+                  "flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3.5 transition",
+                  selected
+                    ? "border-brand-500 bg-brand-500/10"
+                    : "border-ink-600 bg-ink-850 hover:border-ink-500",
+                )}
+              >
+                <span className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="tier"
+                    value={i}
+                    checked={selected}
+                    onChange={() => setTier(i)}
+                    className="h-4 w-4 accent-brand-500"
+                  />
+                  <span className="font-medium text-slate-100">{tierLabel(event, i)}</span>
+                </span>
+                <span className="font-mono text-sm text-citrus-300">
+                  {formatEther(BigInt(tp))} ETH
+                </span>
+              </label>
+            );
+          })}
+        </fieldset>
+
+        {ended ? (
+          <TxStatus tone="warn">This event has ended — minting is closed.</TxStatus>
+        ) : isConnected ? (
           <Button onClick={mint} loading={isPending} className="w-full">
-            {isPending ? "Minting…" : `Mint for ${formatEther(price)} ETH`}
+            {isPending ? "Minting…" : `Mint ${tierLabel(event, tier)} — ${formatEther(price)} ETH`}
           </Button>
         ) : (
           <p className="text-sm text-slate-400">Connect your wallet to mint.</p>
         )}
 
         {hash && (
-          <TxStatus tone="success">Minted! Transaction {formatTxHash(hash)} confirmed.</TxStatus>
+          <TxStatus tone="success">
+            <p>Mint submitted! It will appear in your wallet once confirmed.</p>
+            <p className="mt-1">
+              <TxLink hash={hash} label="Track it live on BaseScan" />
+            </p>
+          </TxStatus>
         )}
         {error && <TxStatus tone="danger">Mint failed — check your wallet and try again.</TxStatus>}
       </Card>

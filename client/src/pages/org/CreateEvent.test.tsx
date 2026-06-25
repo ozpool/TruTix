@@ -8,7 +8,14 @@ import { useCreateEvent } from "../../hooks/useCreateEvent";
 vi.mock("../../hooks/useCreateEvent", () => ({ useCreateEvent: vi.fn() }));
 
 const submit = vi.fn();
-const base = { error: null, txError: null, warning: null, eventId: null, submit };
+const base = {
+  error: null,
+  txError: null,
+  warning: null,
+  eventId: null,
+  txHash: undefined,
+  submit,
+};
 
 function render() {
   renderWithProviders(
@@ -24,7 +31,7 @@ describe("CreateEvent wizard", () => {
   it("submits the typed draft to the create hook", () => {
     vi.mocked(useCreateEvent).mockReturnValue({ ...base, phase: "form" });
     render();
-    fireEvent.change(screen.getByText("Name").parentElement!.querySelector("input")!, {
+    fireEvent.change(screen.getByText("Event name").parentElement!.querySelector("input")!, {
       target: { value: "Jazz Night" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Create event" }));

@@ -68,5 +68,5 @@ export function useListTicket(onListed?: () => void) {
     }
   }, [isSuccess, hash]);
 
-  return { phase, error: revertError ?? (txError ? "Listing failed." : null), start };
+  return { phase, error: revertError ?? (txError ? "Listing failed." : null), hash, start };
 }
