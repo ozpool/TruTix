@@ -14,6 +14,7 @@ const eventSchema = new Schema(
     royaltyBps: { type: Number, required: true },
     startsAt: { type: Date, required: true },
     tierPrices: { type: [String], default: [] },
+    tierNames: { type: [String], default: [] },
   },
   { timestamps: true },
 );

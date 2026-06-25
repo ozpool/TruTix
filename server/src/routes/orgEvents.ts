@@ -18,6 +18,7 @@ const upsertBody = z.object({
   royaltyBps: z.number().int().min(0).max(10_000),
   startsAt: z.coerce.date(),
   tierPrices: z.array(z.string()).optional(),
+  tierNames: z.array(z.string()).optional(),
 });
 
 /// Create or replace the off-chain content for an event the caller organizes.
