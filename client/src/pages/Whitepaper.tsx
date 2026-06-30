@@ -1,9 +1,19 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ButtonLink } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { Card } from "../components/ui/Card";
 import { ShieldIcon, TicketIcon, StoreIcon, ScanIcon } from "../components/ui/icons";
 import { cn } from "../lib/cn";
+import { eventTicket, marketplace } from "../contracts";
+import { explorerAddressUrl, formatAddress } from "../lib/format";
+
+/// The two protocol contracts as deployed on Base Sepolia. Addresses come from
+/// the same env the app uses, so the paper never drifts from the running build.
+const deployedContracts = [
+  ["EventTicket", eventTicket.address],
+  ["TicketMarketplace", marketplace.address],
+] as const;
 
 /// Each section is anchored so the table of contents can jump to it.
 interface Section {
@@ -23,13 +33,13 @@ const sections: Section[] = [
         <p>
           The live-event industry loses billions every year to scalping, counterfeit tickets, and
           opaque resale markets where neither fans nor creators are protected. On traditional
-          platforms, the ticket, the identity, and the money are all custodied by the platform —
+          platforms, the ticket, the identity, and the money are all custodied by the platform -
           fans rent access they can lose at any moment, and price caps exist only as unenforceable
           policy.
         </p>
         <p>
           TruTix reframes a ticket as an asset the holder genuinely owns: an NFT in their own
-          wallet. The rules that matter — a maximum resale price and a creator royalty — are
+          wallet. The rules that matter - a maximum resale price and a creator royalty - are
           enforced by the smart contract itself, not by a user interface that can be bypassed.
           Tickets are fully self-contained on-chain (JSON + SVG, no external gateway), and entry is
           verified by a wallet-signed QR code checked with <code>ecrecover</code> at the gate. The
@@ -37,7 +47,7 @@ const sections: Section[] = [
         </p>
         <p className="text-slate-400">
           This paper describes the problem, the protocol, its security model, and the boundaries of
-          the current release — which is a testnet, pre-audit demonstration, not a production
+          the current release - which is a testnet, pre-audit demonstration, not a production
           service.
         </p>
       </div>
@@ -50,7 +60,7 @@ const sections: Section[] = [
     content: (
       <div className="space-y-4">
         <p>
-          A ticket should be a bearer asset — something you hold and control. Today it is usually a
+          A ticket should be a bearer asset - something you hold and control. Today it is usually a
           revocable row in a database you do not own, governed by terms that can change without your
           consent. That gap is the source of most ticketing pain: lock-in, silent duplication, and
           secondary markets that extract value from everyone except the fan and the creator.
@@ -82,7 +92,7 @@ const sections: Section[] = [
           ],
           [
             "Counterfeits & duplicates",
-            "Screenshots, forwarded PDFs, and duplicated barcodes let the same seat be sold twice — the fan finds out at the door.",
+            "Screenshots, forwarded PDFs, and duplicated barcodes let the same seat be sold twice - the fan finds out at the door.",
           ],
           [
             "Platform lock-in & revocation",
@@ -108,7 +118,7 @@ const sections: Section[] = [
     content: (
       <div className="space-y-4">
         <p>
-          Online event ticketing is a large, growing market — published estimates for 2025 range
+          Online event ticketing is a large, growing market - published estimates for 2025 range
           from roughly US$53&nbsp;billion to US$85&nbsp;billion depending on scope and methodology,
           with strong forecast growth through the decade. A meaningful share of that value moves
           through the secondary (resale) market, much of it captured by scalpers rather than fans or
@@ -116,7 +126,7 @@ const sections: Section[] = [
         </p>
         <p>
           Incumbents such as Ticketmaster and SeatGeek dominate primary sales but treat resale as
-          either unregulated or capped only through contractual terms — policy, not code. Web3
+          either unregulated or capped only through contractual terms - policy, not code. Web3
           efforts have explored on-chain ownership: GET Protocol, for example, has powered millions
           of NFT tickets and gives organizers resale control, but abstracts the NFT and custody away
           from the end user.
@@ -126,7 +136,7 @@ const sections: Section[] = [
           <strong>self-custodied tickets</strong> (the NFT lives in the fan&rsquo;s own wallet), a
           resale cap enforced in an <strong>open marketplace contract</strong>, and{" "}
           <strong>fully on-chain, gateway-free metadata</strong>. We are early and unproven at scale
-          — this is a stated position, not a claim of market leadership.
+          - this is a stated position, not a claim of market leadership.
         </p>
       </div>
     ),
@@ -153,7 +163,7 @@ const sections: Section[] = [
             ],
             [
               "The resale cap is contract-enforced on the TruTix marketplace",
-              "A sale through TruTix above the organizer's cap reverts. (Direct wallet-to-wallet transfers can bypass it — see Edge Cases.)",
+              "A sale through TruTix above the organizer's cap reverts. (Direct wallet-to-wallet transfers can bypass it - see Edge Cases.)",
             ],
           ].map(([h, b]) => (
             <li key={h} className="flex gap-3">
@@ -171,7 +181,7 @@ const sections: Section[] = [
           Two contracts carry the protocol: <strong>EventTicket</strong> (minting, metadata,
           redemption, royalties) and <strong>TicketMarketplace</strong> (capped, on-chain resale
           settlement). An off-chain indexer mirrors chain events into a database used purely as a
-          read cache for search and display — it never decides ownership or redemption.
+          read cache for search and display - it never decides ownership or redemption.
         </p>
       </div>
     ),
@@ -185,11 +195,11 @@ const sections: Section[] = [
         <p>
           When an organizer creates an event they set a maximum resale price as a percentage over
           face value. The marketplace contract checks every listing against that cap. A listing
-          above it does not merely fail in the app — the transaction <strong>reverts</strong>.
+          above it does not merely fail in the app - the transaction <strong>reverts</strong>.
         </p>
         <p className="text-slate-400">
           The interface still validates the price for a smooth experience, but the UI check is UX;
-          the on-chain revert is the guarantee — <strong>for sales settled through TruTix</strong>.
+          the on-chain revert is the guarantee - <strong>for sales settled through TruTix</strong>.
           Because the ticket is a standard transferable NFT, a determined holder can still move it
           wallet-to-wallet or list it on a generic marketplace outside the cap. We treat this
           limitation as a first-class honesty point, covered in Edge Cases &amp; Failure Modes.
@@ -204,7 +214,7 @@ const sections: Section[] = [
     content: (
       <p>
         Each event encodes a creator royalty using the ERC-2981 standard. On every resale, the
-        royalty is settled atomically at the moment of sale and paid directly to the creator —
+        royalty is settled atomically at the moment of sale and paid directly to the creator -
         forever, with no invoicing and no trust required. The creator earns from a healthy secondary
         market instead of being cut out of it.
       </p>
@@ -218,7 +228,7 @@ const sections: Section[] = [
       <p>
         A ticket&rsquo;s <code>tokenURI</code> returns a self-contained JSON document with an
         embedded SVG image. There is no IPFS hash, no external gateway, and no link to rot. As long
-        as the chain exists, the ticket renders — its art and attributes are part of the asset
+        as the chain exists, the ticket renders - its art and attributes are part of the asset
         itself, not a pointer to a file that might disappear.
       </p>
     ),
@@ -254,7 +264,7 @@ const sections: Section[] = [
           {[
             [
               "Lost wallet or private key",
-              "A ticket is an NFT held entirely in the user's wallet. If the keys are lost, the ticket is unrecoverable — there is no backend override or custodial recovery. This is the cost of genuine self-custody.",
+              "A ticket is an NFT held entirely in the user's wallet. If the keys are lost, the ticket is unrecoverable - there is no backend override or custodial recovery. This is the cost of genuine self-custody.",
             ],
             [
               "The resale cap can be bypassed off-platform",
@@ -266,7 +276,7 @@ const sections: Section[] = [
             ],
             [
               "Event cancellation & refunds",
-              "The protocol is non-custodial: primary-sale proceeds accrue to the organizer's on-chain balance and resale settles directly between parties. No funds are escrowed, so refunds are the organizer's responsibility — the protocol does not and cannot issue them automatically.",
+              "The protocol is non-custodial: primary-sale proceeds accrue to the organizer's on-chain balance and resale settles directly between parties. No funds are escrowed, so refunds are the organizer's responsibility - the protocol does not and cannot issue them automatically.",
             ],
             [
               "QR screenshot / replay",
@@ -289,7 +299,7 @@ const sections: Section[] = [
     content: (
       <div className="space-y-4">
         <p>
-          TruTix is non-custodial by design — the backend never holds tickets or funds, and resale
+          TruTix is non-custodial by design - the backend never holds tickets or funds, and resale
           settlement happens entirely on-chain. Access is split into three tiers that are never
           blurred:
         </p>
@@ -317,7 +327,7 @@ const sections: Section[] = [
         <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
           <strong>Audit status.</strong> TruTix is deployed on Base Sepolia (testnet only) and has
           not undergone a third-party smart-contract audit. EventTicket and TicketMarketplace should
-          be treated as experimental — do not mint or trade tickets backed by funds you cannot
+          be treated as experimental - do not mint or trade tickets backed by funds you cannot
           afford to lose. A formal audit and production key management are planned ahead of any
           mainnet deployment. Vulnerability reports can be sent via the project&rsquo;s GitHub
           issues.
@@ -334,7 +344,7 @@ const sections: Section[] = [
         <p>
           TruTix charges <strong>no platform fee</strong> in this release. On a primary mint, 100%
           of the price accrues to the organizer. On a resale, the marketplace splits the payment
-          between the seller and the ERC-2981 royalty receiver (the organizer/creator) only — the
+          between the seller and the ERC-2981 royalty receiver (the organizer/creator) only - the
           protocol takes nothing in between.
         </p>
         <p className="text-slate-400">
@@ -354,27 +364,27 @@ const sections: Section[] = [
     content: (
       <div className="space-y-3">
         <p className="text-slate-400">
-          Phases are marked done or planned. We do not commit to dates we cannot yet guarantee.
+          Each item is marked done or planned. We do not commit to dates we cannot yet guarantee.
         </p>
         <ul className="space-y-2">
           {[
             [
-              "Phase 1 — Core protocol",
+              "Core protocol",
               "done",
               "EventTicket + TicketMarketplace, fully on-chain metadata, and resale-cap enforcement on the marketplace.",
             ],
             [
-              "Phase 2 — Gate identity",
+              "Gate identity",
               "done",
               "Wallet-signed QR, ecrecover verification, and fail-closed scanning.",
             ],
             [
-              "Phase 3 — Audit & hardening",
+              "Audit & hardening",
               "planned",
               "Third-party contract audit, production key management, and a decision on token-level transfer restrictions to make the cap universal.",
             ],
             [
-              "Phase 4 — Mainnet & ecosystem",
+              "Mainnet & ecosystem",
               "planned",
               "Base mainnet deployment, plus items currently out of scope: IPFS/Pinata fallback, WalletConnect, and an offline scanner queue.",
             ],
@@ -401,7 +411,7 @@ const sections: Section[] = [
       <div className="space-y-4">
         <p>
           TruTix is an early-stage project. Its smart contracts are developed in-house and are open
-          for inspection on Base Sepolia. There is no token, no DAO, and no on-chain governance —
+          for inspection on Base Sepolia. There is no token, no DAO, and no on-chain governance -
           per-event parameters (price, resale cap, royalty) are set by each event&rsquo;s organizer
           at creation and are immutable thereafter.
         </p>
@@ -419,18 +429,16 @@ const references = [
   ["ERC-721: Non-Fungible Token Standard", "https://eips.ethereum.org/EIPS/eip-721"],
   ["ERC-2981: NFT Royalty Standard", "https://eips.ethereum.org/EIPS/eip-2981"],
   ["EIP-191: Signed Data Standard", "https://eips.ethereum.org/EIPS/eip-191"],
-  ["Base — Documentation", "https://docs.base.org"],
-  ["GET Protocol — NFT Ticketing", "https://get-protocol.io/"],
+  ["Base - Documentation", "https://docs.base.org"],
+  ["GET Protocol - NFT Ticketing", "https://get-protocol.io/"],
   [
-    "The Business Research Company — Online Event Ticketing Market Report",
+    "The Business Research Company - Online Event Ticketing Market Report",
     "https://www.thebusinessresearchcompany.com/report/online-event-ticketing-global-market-report",
   ],
-  ["Notre Dame — White Paper Structure", "https://libguides.library.nd.edu/white-papers/structure"],
-  ["Visme — How to Write a White Paper", "https://visme.co/blog/how-to-write-a-white-paper/"],
 ];
 
 const glossary = [
-  ["NFT", "A non-fungible token — a unique, verifiably owned asset on a blockchain."],
+  ["NFT", "A non-fungible token - a unique, verifiably owned asset on a blockchain."],
   ["ERC-2981", "The royalty standard that lets a token signal a creator fee to marketplaces."],
   ["ecrecover", "An EVM operation that recovers the signer's address from a message signature."],
   ["Redemption flag", "A one-way on-chain marker set when a ticket is used at the gate."],
@@ -505,22 +513,28 @@ export function Whitepaper() {
 
   return (
     <div className="space-y-12">
-      {/* Reading-progress bar, fixed across the very top of the viewport. */}
-      <div
-        className="fixed inset-x-0 top-0 z-50 h-1 bg-gradient-to-r from-brand-500 to-citrus-400 transition-[width] duration-150"
-        style={{ width: `${progress}%` }}
-        role="progressbar"
-        aria-label="Reading progress"
-        aria-valuenow={Math.round(progress)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      />
+      {/* Reading-progress bar, fixed across the very top of the viewport.
+          Rendered through a portal to <body> so it escapes the page's
+          `animate-rise` wrapper - a transformed ancestor would otherwise
+          become its containing block and make the "fixed" bar scroll away. */}
+      {createPortal(
+        <div
+          className="fixed inset-x-0 top-0 z-50 h-1 bg-gradient-to-r from-brand-500 to-citrus-400 transition-[width] duration-150"
+          style={{ width: `${progress}%` }}
+          role="progressbar"
+          aria-label="Reading progress"
+          aria-valuenow={Math.round(progress)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        />,
+        document.body,
+      )}
 
       {/* Cover */}
       <header className="overflow-hidden rounded-3xl border border-ink-700 bg-gradient-to-br from-ink-850 to-ink-900 p-8 shadow-card sm:p-12">
         <Badge tone="brand">White Paper · v1.0 · June 2026</Badge>
         <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-[1.05] sm:text-5xl">
-          TruTix —{" "}
+          TruTix -{" "}
           <span className="bg-gradient-to-r from-brand-400 to-citrus-400 bg-clip-text text-transparent">
             Tickets You Actually Own
           </span>
@@ -595,7 +609,7 @@ export function Whitepaper() {
               <div className="space-y-1.5">
                 <h3 className="font-display text-lg text-slate-100">For attendees</h3>
                 <p className="text-sm text-slate-400">
-                  Browse events and mint a ticket straight to your wallet — yours to keep, resell,
+                  Browse events and mint a ticket straight to your wallet - yours to keep, resell,
                   or show at the gate.
                 </p>
               </div>
@@ -673,6 +687,34 @@ export function Whitepaper() {
                   <div key={k} className="flex justify-between gap-4 bg-ink-900/60 px-4 py-2.5">
                     <dt className="text-sm text-slate-500">{k}</dt>
                     <dd className="text-right text-sm text-slate-200">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="flex items-center gap-2 font-display text-lg text-slate-100">
+                <TicketIcon className="h-5 w-5 text-brand-300" /> Deployed contracts (Base Sepolia)
+              </h3>
+              <dl className="divide-y divide-ink-700 overflow-hidden rounded-xl border border-ink-700">
+                {deployedContracts.map(([name, address]) => (
+                  <div key={name} className="flex justify-between gap-4 bg-ink-900/60 px-4 py-2.5">
+                    <dt className="text-sm text-slate-500">{name}</dt>
+                    <dd className="text-right text-sm">
+                      {address ? (
+                        <a
+                          href={explorerAddressUrl(address)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 font-mono text-brand-300 underline-offset-2 hover:text-brand-200 hover:underline"
+                        >
+                          {formatAddress(address)}
+                          <span aria-hidden="true">↗</span>
+                        </a>
+                      ) : (
+                        <span className="text-slate-500">not configured</span>
+                      )}
+                    </dd>
                   </div>
                 ))}
               </dl>
