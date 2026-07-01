@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useSignMessage } from "wagmi";
 import { QRCodeSVG } from "qrcode.react";
@@ -18,10 +18,13 @@ export function TicketPass() {
   const [qr, setQr] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(FRESH_SECONDS);
   const [failed, setFailed] = useState(false);
+  const signingRef = useRef(false);
 
   useEffect(() => {
     let active = true;
     async function refresh() {
+      if (signingRef.current) return; // dev StrictMode re-fires this effect; skip the duplicate prompt
+      signingRef.current = true;
       try {
         const timestamp = Date.now();
         const signature = await signMessageAsync({ message: gateMessage(id, timestamp) });
@@ -31,6 +34,8 @@ export function TicketPass() {
         setFailed(false);
       } catch {
         if (active) setFailed(true);
+      } finally {
+        signingRef.current = false;
       }
     }
     void refresh();
