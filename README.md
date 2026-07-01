@@ -81,7 +81,10 @@ viewing and reselling tickets, the venue gate scanner, and an organizer console
 for creating events and managing staff. Routes are gated by role - attendees
 just connect a wallet, organizers authenticate with SIWE, staff use their scoped
 token. On-chain actions link out to the block explorer so a user can watch a
-transaction confirm instead of trusting the interface.
+transaction confirm instead of trusting the interface. Because ownership lives
+on-chain, the ticket wallet reads it straight from the contract, so a ticket you
+hold appears even when the indexer cache is still catching up; the API cache is
+used to make the list fast and to fill in event details.
 
 ### Shared
 
@@ -169,7 +172,8 @@ pnpm build
 - `MONGO_URI` - MongoDB connection string
 - `JWT_SECRET` - 32+ character secret for organizer and staff tokens
 - `SIWE_DOMAIN` - origin used in the SIWE message (must match the client)
-- `RPC_URL` - Base Sepolia JSON-RPC endpoint
+- `RPC_URL` - Base Sepolia JSON-RPC endpoint (a dedicated provider such as
+  Alchemy is recommended over the public endpoint so the indexer stays reliable)
 - `BACKEND_PRIVATE_KEY` - redeemer wallet authorized to mark tickets redeemed
 - `EVENT_TICKET_ADDR`, `MARKETPLACE_ADDR` - deployed contract addresses
 - `GATE_FRESHNESS_MS` - optional QR validity window, defaults to `60000`
@@ -178,7 +182,8 @@ pnpm build
 
 - `VITE_API_URL` - base URL of the API
 - `VITE_SIWE_DOMAIN` - must match the server's `SIWE_DOMAIN`
-- `VITE_RPC_URL` - Base Sepolia JSON-RPC endpoint
+- `VITE_RPC_URL` - Base Sepolia JSON-RPC endpoint (a dedicated provider such as
+  Alchemy is recommended; the wallet reads ticket ownership through it)
 - `VITE_EVENT_TICKET_ADDR`, `VITE_MARKETPLACE_ADDR` - deployed contract addresses
 
 ## Contracts: deploy and verify
