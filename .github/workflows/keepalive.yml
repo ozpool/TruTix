@@ -1,0 +1,16 @@
+name: Keep API awake
+
+# Render's free plan sleeps the API after ~15 min idle, which costs the next
+# real request a slow cold start. Ping the health check often enough to keep
+# the instance warm; this consumes free-tier instance hours but no billing.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health check
+        run: curl --fail --silent --show-error https://trutix.onrender.com/health
