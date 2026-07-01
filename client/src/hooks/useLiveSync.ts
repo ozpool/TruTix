@@ -2,7 +2,14 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 /// Query keys whose data is served by the API from the indexer's cache.
-const CHAIN_DERIVED_KEYS = [["events"], ["event"], ["tickets"], ["resale"], ["scan-history"]];
+const CHAIN_DERIVED_KEYS = [
+  ["events"],
+  ["event"],
+  ["tickets"],
+  ["owned-tickets"],
+  ["resale"],
+  ["scan-history"],
+];
 
 /// How often to re-pull the cached lists from the API. The server-side indexer
 /// is the only thing that watches the chain; the client just re-reads its cache
