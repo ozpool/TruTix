@@ -7,7 +7,8 @@ import { IndexerState } from "../models";
 import { dispatch } from "./dispatch";
 
 const POLL_MS = 4_000;
-const CHUNK = 5_000n; // max block span per getContractEvents call (RPC range cap)
+const CHUNK = 10n; // max block span per getContractEvents call (Alchemy free-tier eth_getLogs cap)
+const CHUNK_DELAY_MS = 150; // stay under free-tier requests/sec cap during long catch-ups
 const CURSOR_KEY = "default";
 
 type DecodedLog = Log & { eventName: string; args: Record<string, unknown> };
@@ -58,6 +59,7 @@ async function catchUp(from: bigint, to: bigint, contracts: Address[]): Promise<
     );
     for (const log of logs) await dispatch(log.eventName, log.args);
     await saveCursor(end);
+    if (end < to) await sleep(CHUNK_DELAY_MS);
   }
 }
 

@@ -22,18 +22,10 @@ const config: HardhatUserConfig = {
       chainId: 84532,
     },
   },
+  // Etherscan V2 unified API: a single key resolves the right explorer by
+  // chainId, so Base Sepolia no longer needs a custom-chain endpoint.
   etherscan: {
-    apiKey: { baseSepolia: BASESCAN_API_KEY },
-    customChains: [
-      {
-        network: "baseSepolia",
-        chainId: 84532,
-        urls: {
-          apiURL: "https://api-sepolia.basescan.org/api",
-          browserURL: "https://sepolia.basescan.org",
-        },
-      },
-    ],
+    apiKey: BASESCAN_API_KEY,
   },
 };
 

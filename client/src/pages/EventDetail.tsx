@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
-import { useAccount, useWriteContract } from "wagmi";
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatEther } from "viem";
 import { useEvent } from "../hooks/useEvents";
 import { formatDateTime, isPast, tierLabel } from "../lib/format";
+import { txErrorMessage } from "../lib/txError";
 import { cn } from "../lib/cn";
 import { chainId, eventTicket } from "../contracts";
 import { Card } from "../components/ui/Card";
@@ -17,8 +19,24 @@ export function EventDetail() {
   const { eventId } = useParams();
   const { data: event, isLoading, isError } = useEvent(eventId);
   const { isConnected } = useAccount();
-  const { writeContract, isPending, data: hash, error } = useWriteContract();
+  const { writeContract, isPending, data: hash, error: writeError } = useWriteContract();
+  const receipt = useWaitForTransactionReceipt({ hash });
+  const queryClient = useQueryClient();
   const [tier, setTier] = useState(0);
+
+  // The full mint lifecycle: signing in the wallet → pending in a block →
+  // confirmed. We only claim success once the receipt lands with status success.
+  const confirming = Boolean(hash) && receipt.isLoading;
+  const confirmed = receipt.isSuccess && receipt.data?.status === "success";
+  const reverted = receipt.isSuccess && receipt.data?.status === "reverted";
+
+  // On confirmation, refresh the ticket lists so the new ticket appears without
+  // a manual reload — both the on-chain read and the cached API list.
+  useEffect(() => {
+    if (!confirmed) return;
+    void queryClient.invalidateQueries({ queryKey: ["owned-tickets"] });
+    void queryClient.invalidateQueries({ queryKey: ["tickets"] });
+  }, [confirmed, queryClient]);
 
   if (isLoading)
     return (
@@ -123,22 +141,63 @@ export function EventDetail() {
         {ended ? (
           <TxStatus tone="warn">This event has ended — minting is closed.</TxStatus>
         ) : isConnected ? (
-          <Button onClick={mint} loading={isPending} className="w-full">
-            {isPending ? "Minting…" : `Mint ${tierLabel(event, tier)} — ${formatEther(price)} ETH`}
+          <Button onClick={mint} loading={isPending || confirming} className="w-full">
+            {isPending
+              ? "Waiting for wallet…"
+              : confirming
+                ? "Confirming on-chain…"
+                : `Mint ${tierLabel(event, tier)} — ${formatEther(price)} ETH`}
           </Button>
         ) : (
           <p className="text-sm text-slate-400">Connect your wallet to mint.</p>
         )}
 
-        {hash && (
-          <TxStatus tone="success">
-            <p>Mint submitted! It will appear in your wallet once confirmed.</p>
+        {writeError && <TxStatus tone="danger">{txErrorMessage(writeError)}</TxStatus>}
+
+        {hash && confirming && (
+          <TxStatus tone="info">
+            <p>Confirming your mint on-chain… this usually takes a few seconds.</p>
             <p className="mt-1">
               <TxLink hash={hash} label="Track it live on BaseScan" />
             </p>
           </TxStatus>
         )}
-        {error && <TxStatus tone="danger">Mint failed — check your wallet and try again.</TxStatus>}
+
+        {hash && reverted && (
+          <TxStatus tone="danger">
+            <p>
+              The mint reverted on-chain — no ticket was created and the ticket price was not taken
+              (only gas). Please try again.
+            </p>
+            <p className="mt-1">
+              <TxLink hash={hash} label="See the failed transaction" />
+            </p>
+          </TxStatus>
+        )}
+
+        {hash && receipt.isError && !reverted && (
+          <TxStatus tone="warn">
+            <p>
+              Your mint was submitted, but we couldn't confirm it yet. Check its status on the
+              explorer, then refresh My Tickets.
+            </p>
+            <p className="mt-1">
+              <TxLink hash={hash} label="Check on BaseScan" />
+            </p>
+          </TxStatus>
+        )}
+
+        {hash && confirmed && (
+          <TxStatus tone="success">
+            <p>Ticket confirmed 🎟️ It's now in your wallet.</p>
+            <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+              <Link to="/me" className="font-medium text-brand-300 hover:text-brand-200">
+                View in My Tickets →
+              </Link>
+              <TxLink hash={hash} label="View transaction" />
+            </p>
+          </TxStatus>
+        )}
       </Card>
     </section>
   );

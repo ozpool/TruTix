@@ -1,17 +1,20 @@
 import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
-import { useTickets } from "../hooks/useTickets";
+import { useMyTickets } from "../hooks/useMyTickets";
 import { useEventMap } from "../hooks/useEvents";
 import { formatDateTime, tierLabel } from "../lib/format";
-import { ButtonLink } from "../components/ui/Button";
+import { Button, ButtonLink } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Spinner } from "../components/ui/Spinner";
+import { TxStatus } from "../components/ui/TxStatus";
 import { TicketIcon } from "../components/ui/icons";
 
 export function Me() {
   const { address } = useAccount();
-  const { data: tickets, isLoading, isError } = useTickets(address);
+  const { tickets, isLoading, isError, staleFromCache, refetch } = useMyTickets(address);
   const events = useEventMap();
+
+  if (!address) return <p className="text-slate-400">Connect your wallet to see your tickets.</p>;
 
   if (isLoading)
     return (
@@ -19,19 +22,41 @@ export function Me() {
         <Spinner /> Loading your tickets…
       </p>
     );
-  if (isError) return <p className="text-rose-400">Could not load your tickets.</p>;
+
+  if (isError)
+    return (
+      <div className="space-y-3">
+        <TxStatus tone="danger">
+          Could not load your tickets — the chain and the server both failed to respond. Check your
+          connection and try again.
+        </TxStatus>
+        <Button variant="secondary" onClick={refetch}>
+          Try again
+        </Button>
+      </div>
+    );
 
   return (
     <section className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold">My Tickets</h1>
-          <p className="text-sm text-slate-400">Tap a ticket to show its gate pass.</p>
+          <p className="text-sm text-slate-400">
+            {tickets.length > 0
+              ? `${tickets.length} ticket${tickets.length === 1 ? "" : "s"} · tap one to show its gate pass.`
+              : "Tap a ticket to show its gate pass."}
+          </p>
         </div>
         <Link to="/me/listings" className="text-sm font-medium text-brand-300 hover:text-brand-200">
           My resale listings →
         </Link>
       </div>
+
+      {staleFromCache && (
+        <TxStatus tone="warn">
+          Couldn't reach the chain — showing your last cached tickets, which may be out of date.
+        </TxStatus>
+      )}
 
       {!tickets?.length ? (
         <EmptyState
