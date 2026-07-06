@@ -19,6 +19,16 @@ const schema = z.object({
   BACKEND_PRIVATE_KEY: z.string().optional(),
   EVENT_TICKET_ADDR: z.string().optional(),
   MARKETPLACE_ADDR: z.string().optional(),
+  // Optional deep-history RPC (e.g. Envio HyperRPC) for indexer catch-up after
+  // downtime. Only used for settled blocks below INDEXER_TIP_SAFETY; unset = disabled.
+  INDEXER_BACKFILL_RPC_URL: z.string().optional(),
+  // How many blocks below chain head are considered "settled enough" to read
+  // from the backfill RPC. Below this, always use the primary RPC.
+  INDEXER_TIP_SAFETY: z.coerce.number().int().positive().default(300),
+  // Max block span per backfill getContractEvents call. HyperRPC-style backfill
+  // RPCs are typically rate-limited by call count, not range, and serve huge
+  // spans in a single request — so this should stay large, not small.
+  INDEXER_BACKFILL_MAX_RANGE: z.coerce.number().int().positive().default(200_000),
 });
 
 export const config = schema.parse(process.env);
