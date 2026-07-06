@@ -177,6 +177,12 @@ pnpm build
 - `BACKEND_PRIVATE_KEY` - redeemer wallet authorized to mark tickets redeemed
 - `EVENT_TICKET_ADDR`, `MARKETPLACE_ADDR` - deployed contract addresses
 - `GATE_FRESHNESS_MS` - optional QR validity window, defaults to `60000`
+- `INDEXER_BACKFILL_RPC_URL` - optional deep-history RPC (e.g. an Envio
+  HyperRPC endpoint) the indexer uses to catch up quickly on blocks more than
+  `INDEXER_TIP_SAFETY` behind the chain head. Unset by default, in which case
+  catch-up falls back to the primary RPC. Blocks within the safety margin of
+  the head always read from the primary RPC, since a backfill index can lag
+  slightly behind the true tip.
 
 **Client** (`client/.env`) - see `client/.env.example`:
 
@@ -216,8 +222,11 @@ pnpm --filter @trutix/contracts export:abis
   `pnpm build`, and add the `VITE_*` variables above.
 - **API to Render.** Import `render.yaml` as a Blueprint and fill the secret
   variables in the dashboard. The indexer persists its last-processed block, so
-  after a restart or RPC outage it resumes from that cursor. An always-on
-  instance is still recommended to keep the cache close to the chain head.
+  after a restart or RPC outage it resumes from that cursor. On the free plan
+  the service sleeps when idle; setting `INDEXER_BACKFILL_RPC_URL` makes the
+  catch-up after a wake fast instead of stepping through the primary RPC's
+  block-range cap. An always-on instance is still recommended to keep the
+  cache close to the chain head.
 
 ## Project status
 

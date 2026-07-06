@@ -1,10 +1,11 @@
 # Render blueprint for the TruTix API. Import via Render → New → Blueprint, then
 # fill the secret env vars marked `sync: false` in the dashboard.
 #
-# Note: the chain indexer watches from the latest block forward and does not
-# backfill. On the free plan the service sleeps when idle, so events that occur
-# during sleep are not cached until the next on-chain event after wake. Use a
-# paid instance for an always-on indexer.
+# Note: on the free plan the service sleeps when idle, so no polling happens
+# until the next request wakes it. The indexer resumes from its persisted
+# cursor and backfills the gap; set INDEXER_BACKFILL_RPC_URL to a deep-history
+# RPC (e.g. Envio HyperRPC) to make that catch-up fast instead of stepping
+# through the primary RPC's small block-range cap.
 services:
   - type: web
     name: trutix-api
@@ -40,4 +41,9 @@ services:
         sync: false
       # Optional; defaults to 60000 (60s). Leave unset in production.
       - key: GATE_FRESHNESS_MS
+        sync: false
+      # Optional deep-history RPC for indexer catch-up (e.g. an Envio HyperRPC
+      # endpoint). Leave unset to disable; the indexer still backfills via the
+      # primary RPC, just slower.
+      - key: INDEXER_BACKFILL_RPC_URL
         sync: false
