@@ -2,15 +2,28 @@ import { useEffect, useRef, useState } from "react";
 import { useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseEther } from "viem";
 import { chainId, eventTicket, marketplace } from "../contracts";
+import { contractErrorName, txErrorMessage } from "../lib/txError";
 
 type Phase = "idle" | "approving" | "listing" | "done";
 
+const LIST_REVERT_MESSAGES: Record<string, string> = {
+  PriceAboveCap: "That price is above the resale cap for this ticket.",
+  NotApproved: "The marketplace isn't approved to move this ticket yet — try listing again.",
+  NotOwner: "You no longer own this ticket.",
+  TicketRedeemed: "This ticket has already been redeemed and can't be resold.",
+  ZeroPrice: "Enter a price greater than zero.",
+};
+
+function listErrorMessage(err: unknown): string {
+  const name = contractErrorName(err);
+  return (name && LIST_REVERT_MESSAGES[name]) || txErrorMessage(err);
+}
+
 /// Listing a ticket is two transactions: approve the marketplace to move the
-/// NFT, then create the listing. The listing call is simulated first so a
-/// contract rejection (price above the resale cap) surfaces as a readable
-/// message instead of a cryptic wallet gas error. Each confirmed tx hash is
-/// processed once so the approval's receipt cannot be mistaken for the
-/// listing's.
+/// NFT, then create the listing. The listing call is simulated first so any
+/// contract rejection surfaces as a readable message instead of a cryptic
+/// wallet gas error. Each confirmed tx hash is processed once so the
+/// approval's receipt cannot be mistaken for the listing's.
 export function useListTicket(onListed?: () => void) {
   const { address } = useAccount();
   const client = usePublicClient();
@@ -58,8 +71,8 @@ export function useListTicket(onListed?: () => void) {
             args: [tokenId, price],
           }),
         )
-        .catch(() => {
-          setRevertError("The contract rejected this listing — the price is above the resale cap.");
+        .catch((err) => {
+          setRevertError(listErrorMessage(err));
           setPhase("idle");
         });
     } else if (phase === "listing") {

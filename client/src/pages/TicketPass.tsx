@@ -5,9 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { gateMessage } from "../lib/gate";
 import { Spinner } from "../components/ui/Spinner";
 
-// TEMPORARY: widened from 60s to ease manual scan testing. Revert to 60 (and
-// the matching FRESHNESS_MS in server/src/services/verify.ts) before the demo.
-const FRESH_SECONDS = 600;
+const FRESH_SECONDS = 60;
 
 /// Shows a wallet-signed QR for the gate. The signature is refreshed periodically
 /// so a screenshot expires; the backend rejects stale timestamps.

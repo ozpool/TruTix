@@ -1,4 +1,13 @@
-import { BaseError } from "viem";
+import { BaseError, ContractFunctionRevertedError } from "viem";
+
+/// Pull the Solidity custom error name (e.g. "NotApproved") out of a simulate/
+/// write failure, so callers can show a cause-specific message instead of a
+/// generic revert string.
+export function contractErrorName(err: unknown): string | null {
+  if (!(err instanceof BaseError)) return null;
+  const revert = err.walk((e) => e instanceof ContractFunctionRevertedError);
+  return revert instanceof ContractFunctionRevertedError ? (revert.data?.errorName ?? null) : null;
+}
 
 /// Turn a wallet/RPC error into a short, honest, user-facing line. It never
 /// hides the failure — it surfaces the most specific message viem provides, with
